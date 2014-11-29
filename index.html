@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title> STEM </title>
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+	</head>
+	<body>
+		<div class="container">
+			<h1> STEM Report </h1>
+			<input type="date" id="dateInput" class="form-control" /> <br /><br />
+			<button id="loadEvents" type="button" class="btn btn-primary"> Load Events </button><br /><br />
+			<div id="events"> </div>
+		</div>
+
+		<script src="js/jquery-2.1.1.min.js"></script>
+    		<script src="js/bootstrap.min.js"></script>
+
+    		<script>
+    		$("#loadEvents").click( function() {
+    			var date = $("#dateInput").val();
+    			$.ajax({
+    				url: "http://localhost:5000/events",
+    				dataType: "jsonp",
+    				type: "POST",
+    				jsonp: "callback",
+    				data: {"date": date},
+    				success: function(data) {
+    					console.log(data.events);
+	    				$.each(data.events, function(i, e) {
+	    					console.log(e);
+	    					$("#events").append("<div>[" + e.time + "] " + e.name + "</div><br />");
+	    				});
+    				}});
+    		});
+    		</script>
+	</body>
+</html>

@@ -8,14 +8,21 @@ from flask import request
 from pymongo import MongoClient
 from bson import json_util
 
+from helper import crossdomain, jsonp
+
 db = MongoClient().stem
 app = Flask(__name__)
 
+
+
+
 @app.route('/events', methods=['GET', 'POST'])
+@crossdomain(origin='*')
+@jsonp
 def getEvents():
     try:
         if request.method == 'POST':
-            date = reques.form['date']
+            date = request.form['date']
         elif request.method == 'GET':
             date = request.args.get('date','')
     except KeyError:
@@ -40,6 +47,8 @@ def getEvents():
     return resp
 
 @app.route('/people', methods = ['GET', 'POST'])
+@crossdomain(origin='*')
+@jsonp
 def getPeople():
     try:
         if request.method == 'POST':
@@ -64,6 +73,7 @@ def getPeople():
         status = 200, 
         mimetype = 'application/json')
     return resp
+
 
 if __name__ == '__main__':
     app.debug=True
