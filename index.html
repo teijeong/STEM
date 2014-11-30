@@ -8,15 +8,20 @@
 	<body>
 		<div class="container">
 			<h1> STEM Report </h1>
-			<input type="date" id="dateInput" class="form-control" /> <br /><br />
+			<input type="date" id="dateInput" class="form-control"  /> <br /><br />
 			<button id="loadEvents" type="button" class="btn btn-primary"> Load Events </button><br /><br />
-			<div id="events"> </div>
+			<select class="form-control" id="events"> </select><br /><br />
+
+			<div id="participants"> </div>
 		</div>
 
 		<script src="js/jquery-2.1.1.min.js"></script>
     		<script src="js/bootstrap.min.js"></script>
 
     		<script>
+
+    		var events;
+
     		$("#loadEvents").click( function() {
     			var date = $("#dateInput").val();
     			$.ajax({
@@ -26,13 +31,36 @@
     				jsonp: "callback",
     				data: {"date": date},
     				success: function(data) {
-    					console.log(data.events);
+	    				events = data.events;
+	    				$("#events").empty();
 	    				$.each(data.events, function(i, e) {
-	    					console.log(e);
-	    					$("#events").append("<div>[" + e.time + "] " + e.name + "</div><br />");
+	    					$("#events").append("<option class='events' value=" + i + ">[" + e.time + "] " + e.name + "</option><br />");
 	    				});
-    				}});
+    				}
+    			});
     		});
+
+    		$("#events").change( function() {
+    			var idx = $("#events option:selected")[0].value;
+
+    			console.log($("#events option:selected"));
+    			console.log(events);
+    			console.log(events[idx].department);
+    			$.ajax({
+    				url: "http://localhost:5000/people",
+    				dataType: "jsonp",
+    				type: "POST",
+    				jsonp: "callback",
+    				data: {"departments": events[idx].department.join()},
+    				success: function(data) {
+    					$("#participants").empty()
+	    				$.each(data.people, function(i, p) {
+	    					$("#participants").append("<span class='label label-info person'>" + p.name + " <span class='glyphicon glyphicon-remove'></span></span> ");
+	    				});
+    				}
+    			});
+    		});
+
     		</script>
 	</body>
 </html>
