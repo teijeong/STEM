@@ -35,3 +35,9 @@ def insertDepartment(name):
     department = {'_id': departmentID, 'name': name}
     return db.departments.insert(department)
 
+def insertagenda(name):
+    cur = db.agendas.find().sort('_id',pymongo.DESCENDING).limit(1)
+    agendaID = cur[0]['_id'] + 1
+    agenda = {'_id': agendaID, 'name': name}
+    return db.agendas.insert(agenda)
+

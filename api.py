@@ -166,6 +166,27 @@ def insertDepartment():
         mimetype = 'application/json')
     return resp
 
+@app.route('/insert-agenda', methods = ['GET', 'POST'])
+@crossdomain(origin='*')
+@jsonp
+def insertDepartment():
+    try:
+        if request.method == 'POST':
+            name = request.form['name']
+        elif request.method == 'GET':
+            name = request.args.get('name','')
+    except KeyError:
+        data = {'msg': 'FAIL'}
+    result = dbHelper.insertAgenda(name)
+    data = {'msg': 'SUCCESS', 'result': result}
+    resp = Response(
+        response = json.dumps(data, 
+            separators = (',',':'),
+            default=json_util.default), 
+        status = 200, 
+        mimetype = 'application/json')
+    return resp
+
 if __name__ == '__main__':
     app.debug=True
     app.run()
