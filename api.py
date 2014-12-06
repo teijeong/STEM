@@ -173,11 +173,13 @@ def insertAgenda():
     try:
         if request.method == 'POST':
             name = request.form['name']
+            eventID = request.form['eventID']
         elif request.method == 'GET':
             name = request.args.get('name','')
+            eventID = request.args.get('eventID','')
     except KeyError:
         data = {'msg': 'FAIL'}
-    result = dbHelper.insertAgenda(name)
+    result = dbHelper.insertAgenda(name, eventID)
     data = {'msg': 'SUCCESS', 'result': result}
     resp = Response(
         response = json.dumps(data, 
@@ -185,6 +187,46 @@ def insertAgenda():
             default=json_util.default), 
         status = 200, 
         mimetype = 'application/json')
+    return resp
+
+@app.route('/delete-agenda', methods = ['GET', 'POST'])
+@crossdomain(origin='*')
+@jsonp
+def deleteAgenda():
+    try:
+        if request.method == 'POST':
+            agendaID = request.form['agendaID']
+            eventID = request.form['eventID']
+        elif request.method == 'GET':
+            agendaID = request.args.get('agendaID','')
+            eventID = request.args.get('eventID','')
+    except KeyError:
+        data = {'msg': 'FAIL'}
+    agendaID = int(agendaID)
+    result = dbHelper.deleteAgenda(agendaID, eventID)
+    data = {'msg': 'SUCCESS', 'result': result}
+    resp = Response(
+        response = json.dumps(data, 
+            separators = (',',':'),
+            default=json_util.default), 
+        status = 200, 
+        mimetype = 'application/json')
+    return resp
+
+@app.errorhandler(404)
+def not_found(error=None):
+    message = {
+            'status': 404,
+            'message': 'Not Found: ' + request.url,
+    }
+    resp = Response(
+        response = json.dumps(message, 
+            separators = (',',':'),
+            default=json_util.default), 
+        status = 200, 
+        mimetype = 'application/json')
+    resp.status_code = 404
+
     return resp
 
 if __name__ == '__main__':

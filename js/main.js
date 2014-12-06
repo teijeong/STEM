@@ -4,6 +4,12 @@ var events;
 var participants = [];
 var absentees = [];
 
+var currentEvent;
+var agendas = [];
+
+//var server = "https://stem-flask.herokuapp.com/"
+var server = "http://localhost:5000/"
+
 $(document).ready(function() {
 
 });
@@ -11,7 +17,7 @@ $(document).ready(function() {
 $("#loadEvents").click( function() {
     var date = $("#dateInput").val();
     $.ajax({
-        url: "https://stem-flask.herokuapp.com/events",
+        url: server + "events",
         dataType: "jsonp",
         type: "POST",
         jsonp: "callback",
@@ -34,9 +40,10 @@ $("#events").change(updateEvent);
 
 function updateEvent() {
     var idx = $("#events option:selected")[0].value;
+    currentEvent = events[idx];
 
     $.ajax({
-        url: "https://stem-flask.herokuapp.com/people",
+        url: server + "people",
                     //url: "http://localhost:5000/people",
         dataType: "jsonp",
         type: "POST",
@@ -172,7 +179,7 @@ function comfirmReason($element) {
     });
 }
 
-
+//Create new agenda register form
 function newAgendaForm() {
     var $agendaForm = $("<form id='form-new-agenda' class='form-inline'></form>");
     var $input = $("<div class='form-group'></div>");
@@ -183,24 +190,25 @@ function newAgendaForm() {
     $agendaForm.append($input);
     $agendaForm.submit( function(event) { 
         event.preventDefault();
-        registerAgenda($("#new-agenda-name").val()); 
+        registerAgenda($("#new-agenda-name").val(), currentEvent._id); 
     });
     return $agendaForm;
 }
 
-function registerAgenda(name) {
+//Register new agenda and update layout
+function registerAgenda(name, eventID) {
     $.ajax({
-        url: "https://stem-flask.herokuapp.com/insert-agenda",
+        url: server + "insert-agenda",
         dataType: "jsonp",
         type: "POST",
         jsonp: "callback",
         data: {
-            "name": name
+            name: name,
+            eventID: eventID
         },
         success: function (data) {
             $("#form-new-agenda").remove();
             $("#agendas").append(agendaForm(data.result));
-            $("#agendas").append("<button class='btn btn-primary' id='add-agenda'>Add Agenda</button>");
             var $btn = $("<button class='btn btn-primary' id='add-agenda'>Add Agenda</button>");
             $btn.click(function () {
                 $("#agendas").append(newAgendaForm());
@@ -211,9 +219,34 @@ function registerAgenda(name) {
     });
 }
 
+function removeAgenda(agendaID, eventID) {
+    $.ajax({
+        url: server + "delete-agenda",
+        dataType: "jsonp",
+        type: "POST",
+        jsonp: "callback",
+        data: {
+            agendaID: agendaID,
+            eventID: eventID
+        },
+        success: function (data) {
+            var formID = "#agenda-" + agendaID;
+            $(formID).remove();
+        }
+    });
+}
+
+//Create agenda form
 function agendaForm(agenda) {
-    var $agendaForm = $("<form id='agenda-" + agenda._id + "' class='form-inline'></form>");
+    var $agendaForm = $("<form id='agenda-" + agenda._id + "'></form>");
     $agendaForm.append("<div class='form-group'><label>&lt;Agenda " + agenda._id + "&gt; " + agenda.name + "</label></div>");
+    var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>")
+    $deleteBtn.click( function(event) {
+        event.preventDefault();
+        agendaID = $(this).parent().parent().attr('id').substring(7);
+        removeAgenda(agendaID, currentEvent._id);
+    });
+    $(".form-group", $agendaForm).append($deleteBtn);
     $agendaForm.append("<div class='form-group'><label>Description</label><textarea class='form-control' rows='5'></textarea></div>");
     return $agendaForm;
 }

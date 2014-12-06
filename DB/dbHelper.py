@@ -39,7 +39,7 @@ def insertDepartment(name):
     return db.departments.insert(department)
 
 
-def insertAgenda(name):
+def insertAgenda(name, eventID):
     cur = db.agendas.find().sort('_id',pymongo.DESCENDING).limit(1)
     if cur.count() > 0:
         agendaID = cur[0]['_id'] + 1
@@ -47,5 +47,11 @@ def insertAgenda(name):
         agendaID = 0
     agenda = {'_id': agendaID, 'name': name}
     db.agendas.insert(agenda)
+
+    cur = db.events.update({'_id': eventID}, {'$addToSet': {'agendas': agendaID}})
     return agenda
+
+def deleteAgenda(agendaID, eventID):
+    print (agendaID, eventID)
+    return db.events.update({'_id': eventID}, {'$pull': {'agendas': int(agendaID)}})
 

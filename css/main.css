@@ -11,3 +11,7 @@
 .container-agendas {
     visibility: hidden;
 }
+
+.remove-agenda {
+    right: 0px;
+}
