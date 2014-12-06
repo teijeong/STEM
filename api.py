@@ -13,7 +13,9 @@ from helper import crossdomain, jsonp
 db = MongoClient().stem
 app = Flask(__name__)
 
-
+@app.route('/')
+def mainPage():
+    return "hello"
 
 
 @app.route('/events', methods=['GET', 'POST'])
