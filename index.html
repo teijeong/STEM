@@ -8,7 +8,7 @@
     <body>
         <div class="container">
             <h1> STEM Report </h1>
-            <input type="date" id="dateInput" class="form-control"  /> <br /><br />
+            <input type="text" id="dateInput" class="form-control"  /> <br /><br />
             <button id="loadEvents" type="button" class="btn btn-primary"> Load Events </button><br /><br />
             <select class="form-control" id="events"> </select><br /><br />
             <h3>Participants</h3>
@@ -26,6 +26,10 @@
             var participants = [];
             var absentees = [];
 
+            $(document).ready(function() {
+                $("#dateInput").datepicker();
+            });
+            
             $("#loadEvents").click( function() {
                 var date = $("#dateInput").val();
                 $.ajax({
@@ -40,6 +44,7 @@
                         $.each(data.events, function(i, e) {
                            $("#events").append("<option class='events' value=" + i + ">[" + e.time + "] " + e.name + "</option><br />");
                         });
+                        updateEvent();
                     }
                 });
             });

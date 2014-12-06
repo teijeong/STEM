@@ -1,0 +1,118 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title> STEM </title>
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container">
+            <h1> Register </h1>
+            Date: <input type="date" id="dateInput" class="form-control"  /> <br />
+            TIME(HH:MM): <input type="text" id="timeInput" class="form-control" /><br />
+            Event name: <input type="text" id="eventName" class="form-control" /><br />
+            Departments: <input type="text" id="eventDepartments" class="form-control" value="0"/><br />
+            <button id="registerEvent" type="button" class="btn btn-primary">Register Event</button><br /><br />
+            Name: <input type="text" id="departmentName" class="form-control" /> <br />
+            <button id="registerDepartment" type="button" class="btn btn-primary">Register Department</button><br /><br />
+            Name: <input type="text" id="personName" class="form-control" /> <br />
+            Departments: <input type="text" id="personDepartments" class="form-control" value="0"/><br />
+            <button id="registerPerson" type="button" class="btn btn-primary">Register Person</button><br /><br />
+        </div>
+
+        <script src="js/jquery-2.1.1.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+
+        <script>
+
+            $(document).ready(function() {
+            });
+            
+            $("#registerEvent").click( function() {
+                var date = $("#dateInput").val();
+                var time = $("#timeInput").val();
+                var name = $("#eventName").val();
+                var depts = $("#eventDepartments").val();
+
+                $.ajax({
+                    url: "https://stem-flask.herokuapp.com/insert-event",
+                    dataType: "jsonp",
+                    type: "POST",
+                    jsonp: "callback",
+                    data: {"date": date, "time": time, "name": name, "departments": depts},
+                    success: function(data) {
+                        alert(data);
+                    }
+                });
+            });
+
+            $("#registerDepartment").click( function() {
+                var name = $("#departmentName").val();
+
+                $.ajax({
+                    url: "https://stem-flask.herokuapp.com/insert-department",
+                    dataType: "jsonp",
+                    type: "POST",
+                    jsonp: "callback",
+                    data: {"name": name},
+                    success: function(data) {
+                        alert(data);
+                    }
+                });
+            });
+
+            $("#registerPerson").click( function() {
+                var name = $("#personName").val();
+                var depts = $("#personDepartments").val();
+
+                $.ajax({
+                    url: "https://stem-flask.herokuapp.com/insert-person",
+                    dataType: "jsonp",
+                    type: "POST",
+                    jsonp: "callback",
+                    data: {"name": name, "departments": depts},
+                    success: function(data) {
+                        alert(data);
+                    }
+                });
+            });
+
+
+
+      
+
+            function indexOf(arr, f) {
+                for (var i = 0; i < arr.length; i++) {
+                    if (f(arr[i])) return i;
+                }
+                return -1;
+            }
+
+            function addName(person, isPresent) {
+                var $nameTag = $("<span class='label person'></span>");
+                $nameTag.attr("id", "P-" + person._id);
+                $nameTag.append("[" + person._id + "] " + person.name);
+                var $deleteButton = $("<span class='glyphicon glyphicon-remove'></span>");
+                if (isPresent) {
+                    $nameTag.addClass("label-primary");
+                    $deleteButton.addClass("present-delete");
+                    $deleteButton.click(presentDelete);
+                } else {
+                    $nameTag.addClass("label-danger");
+                    $deleteButton.addClass("absent-delete");
+                    $deleteButton.click(absentDelete);
+                }
+                $nameTag.append(" ");
+                $nameTag.append($deleteButton);
+                if (!isPresent) {
+                    $nameTag.append(" ");
+                    var $restoreButton = $("<span class='glyphicon glyphicon-upload absent-restore'></span>");
+                    $restoreButton.click(absentRestore);
+                    $nameTag.append($restoreButton);
+                }
+                return $nameTag;
+            }
+
+        </script>
+    </body>
+</html>
