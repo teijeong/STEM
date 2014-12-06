@@ -46,5 +46,6 @@ def insertAgenda(name):
     else:
         agendaID = 0
     agenda = {'_id': agendaID, 'name': name}
-    return db.agendas.insert(agenda)
+    db.agendas.insert(agenda)
+    return agenda
 

@@ -20,7 +20,7 @@ $("#loadEvents").click( function() {
             events = data.events;
             $("#events").empty();
             if (data.events.length === 0) {
-                $("#agendas").css("visibility","hidden");
+                $(".container-agendas").css("visibility","hidden");
             }
             $.each(data.events, function(i, e) {
                 $("#events").append("<option class='events' value=" + i + ">[" + e.time + "] " + e.name + "</option><br />");
@@ -50,7 +50,7 @@ function updateEvent() {
             updatePeople();
         }
     });
-    $("#agendas").css("visibility","visible");
+    $(".container-agendas").css("visibility","visible");
 }
 
 function updatePeople() {
@@ -178,10 +178,13 @@ function newAgendaForm() {
     var $input = $("<div class='form-group'></div>");
     $input.append("<input type='text' id='new-agenda-name'></input>");
     var $btn = $("<button class='btn btn-primary' type='submit' id='add-agenda'>Add</button>");
-    $btn.click(function() { registerAgenda($("#new-agenda-name").val()); });
     $input.append(" ");
     $input.append($btn);
     $agendaForm.append($input);
+    $agendaForm.submit( function(event) { 
+        event.preventDefault();
+        registerAgenda($("#new-agenda-name").val()); 
+    });
     return $agendaForm;
 }
 
@@ -220,5 +223,4 @@ $(document).ready(function () {
         $("#agendas").append(newAgendaForm());
         $("#add-agenda").remove();
     });
-    $("#agendas").css("visibility","hidden");
 });
