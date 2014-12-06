@@ -1,0 +1,13 @@
+.reason-text {
+    background-color: inherit;
+    border: 0px;
+    border-color: transparent;
+}
+
+.person {
+    font-size: 100%;
+}
+
+.container-agendas {
+    visibility: hidden;
+}

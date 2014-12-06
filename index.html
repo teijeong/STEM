@@ -4,11 +4,15 @@
         <meta charset="utf-8" />
         <title> STEM </title>
         <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="css/main.css" rel="stylesheet">
+        <link href"css/jquery-ui.min.css" rel="stylesheet">
+        <link href"css/jquery-ui.structure.min.css" rel="stylesheet">
+        <link href"css/jquery-ui.theme.min.css" rel="stylesheet">
     </head>
     <body>
         <div class="container">
             <h1> STEM Report </h1>
-            <input type="text" id="dateInput" class="form-control"  /> <br /><br />
+            <input type="date" id="dateInput" class="form-control"  /> <br /><br />
             <button id="loadEvents" type="button" class="btn btn-primary"> Load Events </button><br /><br />
             <select class="form-control" id="events"> </select><br /><br />
             <h3>Participants</h3>
@@ -17,148 +21,17 @@
             <div id="absentees"> </div>
         </div>
 
+        <div class="container container-agendas">
+            <H3>Agendas</h3>
+
+            <div id="agendas">
+                <button class="btn btn-default" id="add-agenda">Add Agenda</button>
+            </div>
+        </div>
+
         <script src="js/jquery-2.1.1.min.js"></script>
+        <script src="js/jquery-ui.min.js"></script>
         <script src="js/bootstrap.min.js"></script>
-
-        <script>
-
-            var events;
-            var participants = [];
-            var absentees = [];
-
-            $(document).ready(function() {
-                $("#dateInput").datepicker();
-            });
-            
-            $("#loadEvents").click( function() {
-                var date = $("#dateInput").val();
-                $.ajax({
-                    url: "https://stem-flask.herokuapp.com/events",
-                    dataType: "jsonp",
-                    type: "POST",
-                    jsonp: "callback",
-                    data: {"date": date},
-                    success: function(data) {
-                        events = data.events;
-                        $("#events").empty();
-                        $.each(data.events, function(i, e) {
-                           $("#events").append("<option class='events' value=" + i + ">[" + e.time + "] " + e.name + "</option><br />");
-                        });
-                        updateEvent();
-                    }
-                });
-            });
-
-            $("#events").change(updateEvent);
-
-            function updateEvent() {
-                var idx = $("#events option:selected")[0].value;
-
-                $.ajax({
-                    url: "https://stem-flask.herokuapp.com/people",
-                    //url: "http://localhost:5000/people",
-                    dataType: "jsonp",
-                    type: "POST",
-                    jsonp: "callback",
-                    data: {"departments": events[idx].department.join()},
-                    success: function(data) {
-                        participants = [];
-                        $.each(data.people, function(i, p) {
-                            participants.push(p);
-                        });
-                        updatePeople();
-                    }
-                });
-            }
-
-            function updatePeople() {
-                $("#participants").empty();
-                $("#absentees").empty();
-                $("#absentees-header").css("visibility","hidden");
-                $.each(participants, function(i, p) {
-                    $("#participants").append(addName(p, true));
-                    $("#participants").append(" ");
-                });
-            }
-
-            function presentDelete() {
-                var id = $(this).parent().attr('id').substring(2);
-                id = Number(id);
-                $(this).parent().remove();
-                var idx = indexOf(participants, function (p) {
-                    return p._id === id;
-                });
-                if (idx < 0) return;
-                var p = participants[idx];
-                absentees.push(p);
-                $("#absentees-header").css("visibility","visible");
-                $("#absentees").append(addName(p, false));
-                $("#absentees").append(" ");
-                participants.splice(idx, 1);
-            }
-
-
-            function absentDelete() {
-                var id = $(this).parent().attr('id').substring(3);
-                id = Number(id);
-                $(this).parent().remove();
-                var idx = indexOf(absentees, function (p) {
-                    return p._id === id;
-                });
-                if (idx < 0) return;
-                absentees.splice(idx, 1);
-                if (absentees.length < 1) {
-                    $("#absentees-header").css("visibility","hidden");
-                }
-            }
-
-            function absentRestore() {
-                var id = $(this).parent().attr('id').substring(2);
-                id = Number(id);
-                $(this).parent().remove();
-                var idx = indexOf(absentees, function (p) {
-                    return p._id === id;
-                });
-                if (idx < 0) return;
-                var p = absentees[idx];
-                participants.push(p);
-                $("#participants").append(addName(p, true));
-                $("#participants").append(" ");
-                absentees.splice(idx, 1);
-            }
-
-            function indexOf(arr, f) {
-                for (var i = 0; i < arr.length; i++) {
-                    if (f(arr[i])) return i;
-                }
-                return -1;
-            }
-
-            function addName(person, isPresent) {
-                var $nameTag = $("<span class='label person'></span>");
-                $nameTag.attr("id", "P-" + person._id);
-                $nameTag.append("[" + person._id + "] " + person.name);
-                var $deleteButton = $("<span class='glyphicon glyphicon-remove'></span>");
-                if (isPresent) {
-                    $nameTag.addClass("label-primary");
-                    $deleteButton.addClass("present-delete");
-                    $deleteButton.click(presentDelete);
-                } else {
-                    $nameTag.addClass("label-danger");
-                    $deleteButton.addClass("absent-delete");
-                    $deleteButton.click(absentDelete);
-                }
-                $nameTag.append(" ");
-                $nameTag.append($deleteButton);
-                if (!isPresent) {
-                    $nameTag.append(" ");
-                    var $restoreButton = $("<span class='glyphicon glyphicon-upload absent-restore'></span>");
-                    $restoreButton.click(absentRestore);
-                    $nameTag.append($restoreButton);
-                }
-                return $nameTag;
-            }
-
-        </script>
+        <script src="js/main.js"></script>
     </body>
 </html>
