@@ -7,8 +7,8 @@ var absentees = [];
 var currentEvent;
 var agendas = [];
 
-//var server = "https://stem-flask.herokuapp.com/"
-var server = "http://localhost:5000/"
+var server = "https://stem-flask.herokuapp.com/"
+//var server = "http://localhost:5000/"
 
 $(document).ready(function() {
 
