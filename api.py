@@ -11,7 +11,7 @@ from bson import json_util
 from helper import crossdomain, jsonp
 
 mongoURI ='mongodb://heroku_app32258670:5hcl5oso685va7pcpo8e9ku1f5@ds061360.mongolab.com:61360/heroku_app32258670'
-db = MongoClient(mongoURI)
+db = MongoClient(mongoURI).heroku_app32258670
 app = Flask(__name__)
 
 @app.route('/')

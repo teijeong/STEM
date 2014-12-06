@@ -29,7 +29,7 @@
             $("#loadEvents").click( function() {
                 var date = $("#dateInput").val();
                 $.ajax({
-                    url: "http://localhost:5000/events",
+                    url: "https://stem-flask.herokuapp.com/events",
                     dataType: "jsonp",
                     type: "POST",
                     jsonp: "callback",
@@ -50,7 +50,8 @@
                 var idx = $("#events option:selected")[0].value;
 
                 $.ajax({
-                    url: "http://localhost:5000/people",
+                    url: "https://stem-flask.herokuapp.com/people",
+                    //url: "http://localhost:5000/people",
                     dataType: "jsonp",
                     type: "POST",
                     jsonp: "callback",
