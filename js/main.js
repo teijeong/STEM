@@ -199,7 +199,7 @@ function registerAgenda(name) {
         },
         success: function (data) {
             $("#form-new-agenda").remove();
-            $("#agendas").append(agendaForm(data.data));
+            $("#agendas").append(agendaForm(data.result));
             $("#agendas").append("<button class='btn btn-primary' id='add-agenda'>Add Agenda</button>");
             var $btn = $("<button class='btn btn-primary' id='add-agenda'>Add Agenda</button>");
             $btn.click(function () {
