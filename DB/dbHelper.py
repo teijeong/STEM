@@ -52,6 +52,5 @@ def insertAgenda(name, eventID):
     return agenda
 
 def deleteAgenda(agendaID, eventID):
-    print (agendaID, eventID)
-    return db.events.update({'_id': eventID}, {'$pull': {'agendas': int(agendaID)}})
+    return db.events.update({'_id': eventID}, {'$pull': {'agendas': agendaID}})
 

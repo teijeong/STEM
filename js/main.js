@@ -7,8 +7,8 @@ var absentees = [];
 var currentEvent;
 var agendas = [];
 
-var server = "https://stem-flask.herokuapp.com/"
-//var server = "http://localhost:5000/"
+/*/*/var server = "https://stem-flask.herokuapp.com/"
+//*/var server = "http://localhost:5000/"
 
 $(document).ready(function() {
 
@@ -44,11 +44,10 @@ function updateEvent() {
 
     $.ajax({
         url: server + "people",
-                    //url: "http://localhost:5000/people",
         dataType: "jsonp",
         type: "POST",
         jsonp: "callback",
-        data: {"departments": events[idx].department.join()},
+        data: {departments: events[idx].department.join()},
         success: function(data) {
             participants = [];
             $.each(data.people, function(i, p) {
@@ -58,6 +57,7 @@ function updateEvent() {
         }
     });
     $(".container-agendas").css("visibility","visible");
+    updateAgendas();
 }
 
 function updatePeople() {
@@ -67,6 +67,33 @@ function updatePeople() {
     $.each(participants, function(i, p) {
         $("#participants").append(addName(p, true));
         $("#participants").append(" ");
+    });
+}
+
+function updateAgendas() {
+    agendas = [];
+    $("#agendas").empty();
+    $("#agenda-list").empty();
+
+    $.ajax({
+        url: server + "agendas",
+        dataType: "jsonp",
+        type: "POST",
+        jsonp: "callback",
+        data: {eventID: currentEvent._id},
+        success: function(data) {
+            $.each(data.agendas, function(i, agenda) {
+                agendas.push(agenda);
+                $("#agendas").append(agendaForm(agenda));
+                $("#agenda-list").append("<li id=agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
+            });
+
+            $("#agendas").append("<button class='btn btn-dafault' id='add-agenda'>Add Agenda</button>");
+            $("#add-agenda").click(function () {
+                $("#agendas").append(newAgendaForm());
+                $("#add-agenda").remove();
+            });
+        }
     });
 }
 
@@ -184,7 +211,7 @@ function newAgendaForm() {
     var $agendaForm = $("<form id='form-new-agenda' class='form-inline'></form>");
     var $input = $("<div class='form-group'></div>");
     $input.append("<input type='text' id='new-agenda-name'></input>");
-    var $btn = $("<button class='btn btn-primary' type='submit' id='add-agenda'>Add</button>");
+    var $btn = $("<button class='btn btn-default' type='submit' id='add-agenda'>Add</button>");
     $input.append(" ");
     $input.append($btn);
     $agendaForm.append($input);
@@ -209,6 +236,7 @@ function registerAgenda(name, eventID) {
         success: function (data) {
             $("#form-new-agenda").remove();
             $("#agendas").append(agendaForm(data.result));
+            $("#agenda-list").append("<li id=agenda-list-item-" + data.result._id + ">" + data.result.name + "</li>");
             var $btn = $("<button class='btn btn-primary' id='add-agenda'>Add Agenda</button>");
             $btn.click(function () {
                 $("#agendas").append(newAgendaForm());
@@ -231,7 +259,9 @@ function removeAgenda(agendaID, eventID) {
         },
         success: function (data) {
             var formID = "#agenda-" + agendaID;
+            var listID = "#agenda-list-item-" + agendaID;
             $(formID).remove();
+            $(listID).remove();
         }
     });
 }
@@ -252,8 +282,4 @@ function agendaForm(agenda) {
 }
 
 $(document).ready(function () {
-    $("#add-agenda").click(function () {
-        $("#agendas").append(newAgendaForm());
-        $("#add-agenda").remove();
-    });
 });

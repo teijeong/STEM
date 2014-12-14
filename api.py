@@ -91,6 +91,45 @@ def getDepartments():
         mimetype = 'application/json')  
     return resp
 
+@app.route('/agendas', methods = ['GET', 'POST'])
+@crossdomain(origin='*')
+@jsonp
+def getAgendas():
+    data = []
+    try:
+        if request.method == 'POST':
+            eventID = request.form['eventID']
+        elif request.method == 'GET':
+            eventID = request.args.get('eventID','')
+    except KeyError:
+        pass
+    cur = db.events.find({'_id': eventID})
+    if cur.count() <= 0:
+        data = {'msg': 'No event found'}
+        resp = Response(
+            response = json.dumps(data, 
+                separators = (',',':'),
+                default=json_util.default), 
+            status = 200, 
+            mimetype = 'application/json')
+        return resp
+    
+    try:
+        agendas = cur[0]['agendas']
+    except KeyError:
+        agendas = []
+    cur = db.agendas.find({'_id': {'$in':agendas}})
+    for agenda in cur:
+        data.append(agenda)
+    data = {'agendas': data}
+    resp = Response(
+        response = json.dumps(data, 
+            separators = (',',':'),
+            default=json_util.default), 
+        status = 200, 
+        mimetype = 'application/json')  
+    return resp
+
 @app.route('/insert-event', methods=['GET', 'POST'])
 @crossdomain(origin='*')
 @jsonp
@@ -108,6 +147,13 @@ def insertEvent():
             departments = request.args.get('departments','')
     except KeyError:
         data = {'msg': 'FAIL'}
+        resp = Response(
+            response = json.dumps(data, 
+                separators = (',',':'),
+                default=json_util.default), 
+            status = 200, 
+            mimetype = 'application/json')
+        return resp
     eventTime = datetime.datetime.strptime(date + ' ' + time, '%Y-%m-%d %H:%M')
     departments = [int(n) for n in departments.split(',')]
     result = dbHelper.insertEvent(eventTime, name, departments);
