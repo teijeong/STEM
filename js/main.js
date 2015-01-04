@@ -18,9 +18,8 @@ $("#loadEvents").click( function() {
     var date = $("#dateInput").val();
     $.ajax({
         url: server + "events",
-        dataType: "jsonp",
-        type: "POST",
-        jsonp: "callback",
+        crossDomain: true,
+        type: "GET",
         data: {"date": date},
         success: function(data) {
             events = data.events;
@@ -44,9 +43,8 @@ function updateEvent() {
 
     $.ajax({
         url: server + "people",
-        dataType: "jsonp",
-        type: "POST",
-        jsonp: "callback",
+        crossDomain: true,
+        type: "GET",
         data: {departments: events[idx].department.join()},
         success: function(data) {
             participants = [];
@@ -77,9 +75,8 @@ function updateAgendas() {
 
     $.ajax({
         url: server + "agendas",
-        dataType: "jsonp",
-        type: "POST",
-        jsonp: "callback",
+        crossDomain: true,
+        type: "GET",
         data: {eventID: currentEvent._id},
         success: function(data) {
             $.each(data.agendas, function(i, agenda) {
@@ -88,7 +85,7 @@ function updateAgendas() {
                 $("#agenda-list").append("<li id=agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
             });
 
-            $("#agendas").append("<button class='btn btn-dafault' id='add-agenda'>Add Agenda</button>");
+            $("#agendas").append("<button class='btn btn-primary' id='add-agenda'>Add Agenda</button>");
             $("#add-agenda").click(function () {
                 $("#agendas").append(newAgendaForm());
                 $("#add-agenda").remove();
@@ -225,18 +222,17 @@ function newAgendaForm() {
 //Register new agenda and update layout
 function registerAgenda(name, eventID) {
     $.ajax({
-        url: server + "insert-agenda",
-        dataType: "jsonp",
+        url: server + "agenda",
+        crossDomain: true,
         type: "POST",
-        jsonp: "callback",
         data: {
             name: name,
             eventID: eventID
         },
-        success: function (data) {
+        success: function (result) {
             $("#form-new-agenda").remove();
-            $("#agendas").append(agendaForm(data.result));
-            $("#agenda-list").append("<li id=agenda-list-item-" + data.result._id + ">" + data.result.name + "</li>");
+            $("#agendas").append(agendaForm(result));
+            $("#agenda-list").append("<li id=agenda-list-item-" + result._id + ">" + result.name + "</li>");
             var $btn = $("<button class='btn btn-primary' id='add-agenda'>Add Agenda</button>");
             $btn.click(function () {
                 $("#agendas").append(newAgendaForm());
@@ -249,12 +245,10 @@ function registerAgenda(name, eventID) {
 
 function removeAgenda(agendaID, eventID) {
     $.ajax({
-        url: server + "delete-agenda",
-        dataType: "jsonp",
-        type: "POST",
-        jsonp: "callback",
+        url: server + "agenda/" + agendaID,
+        crossDomain: true,
+        type: "DELETE",
         data: {
-            agendaID: agendaID,
             eventID: eventID
         },
         success: function (data) {

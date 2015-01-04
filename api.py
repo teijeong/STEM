@@ -5,259 +5,160 @@ import json
 
 from flask import Flask, Response
 from flask import request
+from flask.ext import restful
+from flask.ext.restful import Resource, reqparse, fields, marshal_with
+from flask.ext.cors import CORS
 from pymongo import MongoClient
 from bson import json_util
-
-from helper import crossdomain, jsonp
 
 from DB import dbHelper
 
 mongoURI ='mongodb://heroku_app32258670:5hcl5oso685va7pcpo8e9ku1f5@ds061360.mongolab.com:61360/heroku_app32258670'
 db = MongoClient(mongoURI).heroku_app32258670
 app = Flask(__name__)
+api = restful.Api(app)
+CORS(app, allow_headers='Content-Type', 
+    methods=['GET', 'HEAD', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'])
 
-@app.route('/events', methods=['GET', 'POST'])
-@crossdomain(origin='*')
-@jsonp
-def getEvents():
-    try:
-        if request.method == 'POST':
-            date = request.form['date']
-        elif request.method == 'GET':
-            date = request.args.get('date','')
-    except KeyError:
-        pass
-    data = []
-    if date:
-        start = datetime.datetime.strptime(date, '%Y-%m-%d')
-        end = start + datetime.timedelta(days=1)
-        cur = db.events.find({'time':{'$gte':start, '$lt':end}})
-        for event in cur:
-            event['time'] = str(event['time'])
-            data.append(event)
-        data = {'events':data}
-    else:
-        data = {'msg': 'date is not given'}
-    resp = Response(
-        response = json.dumps(data, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')
-    return resp
 
-@app.route('/people', methods = ['GET', 'POST'])
-@crossdomain(origin='*')
-@jsonp
-def getPeople():
-    try:
-        if request.method == 'POST':
-            depts = request.form['departments']
-        elif request.method == 'GET':
-            depts = request.args.get('departments','')
-    except KeyError:
-        pass
-    data = []
-    if depts:
-        depts = [int(n) for n in depts.split(',')]
-        cur = db.people.find({'department':{'$in':depts}})
-        for person in cur:
-            data.append(person)
-        data = {'people': data}
-    else:
-        data = {'msg': 'departments are not given'}
-    resp = Response(
-        response = json.dumps(data, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')
-    return resp
+event_fields = {
+    '_id': fields.String,
+    'department': fields.List(fields.Integer),
+    'name': fields.String,
+    'time': fields.String
+}
+events_fields = {
+    'events': fields.List(fields.Nested(event_fields))
+}
 
-@app.route('/departments', methods = ['GET', 'POST'])
-@crossdomain(origin='*')
-@jsonp
-def getDepartments():
-    data = []
-    cur = db.departments.find()
-    for department in cur:
-        data.append(department)
-    data = {'departments': data}
-    resp = Response(
-        response = json.dumps(data, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')  
-    return resp
+class Events(Resource):
 
-@app.route('/agendas', methods = ['GET', 'POST'])
-@crossdomain(origin='*')
-@jsonp
-def getAgendas():
-    data = []
-    try:
-        if request.method == 'POST':
-            eventID = request.form['eventID']
-        elif request.method == 'GET':
-            eventID = request.args.get('eventID','')
-    except KeyError:
-        pass
-    cur = db.events.find({'_id': eventID})
-    if cur.count() <= 0:
-        data = {'msg': 'No event found'}
-        resp = Response(
-            response = json.dumps(data, 
-                separators = (',',':'),
-                default=json_util.default), 
-            status = 200, 
-            mimetype = 'application/json')
-        return resp
+    dateParser = reqparse.RequestParser()
+    dateParser.add_argument('date', type = unicode, required = True, 
+        help = 'Date (yyyy-mm-dd) is required')
+
+    @marshal_with(events_fields)
+    def get(self):
+        args = self.dateParser.parse_args()
+        return {'events': dbHelper.getEvents(args['date'])}
+
+class Event(Resource):
+
+    eventParser = reqparse.RequestParser()
+    eventParser.add_argument('date', type = unicode, required = True,
+        help = 'Date is required')
+    eventParser.add_argument('time', type = unicode, required = True,
+        help = 'Time is required')
+    eventParser.add_argument('name', type = unicode, required = True,
+        help = 'Event name is required')
+    eventParser.add_argument('departments', type = unicode, required = True,
+        help = 'Departments are required')
+
+    def post(self):
+        args = self.eventParser.parse_args()
+        eventTime = datetime.datetime.strptime(args['date'] + ' ' + args['time'], '%Y-%m-%d %H:%M')
+        departments = [int(n) for n in args['departments'].split(',')]
+
+        return {'_id': dbHelper.insertEvent(eventTime, args['name'], departments)}, 201
+
+
+
+depatment_fields = {
+    '_id': fields.Integer,
+    'name': fields.String
+}
+departments_fields = {
+    'departments': fields.List(fields.Nested(depatment_fields))
+}
+
+class Departments(Resource):
     
-    try:
-        agendas = cur[0]['agendas']
-    except KeyError:
-        agendas = []
-    cur = db.agendas.find({'_id': {'$in':agendas}})
-    for agenda in cur:
-        data.append(agenda)
-    data = {'agendas': data}
-    resp = Response(
-        response = json.dumps(data, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')  
-    return resp
+    @marshal_with(departments_fields)
+    def get(self):
+        return dbHelper.getDepartments()
 
-@app.route('/insert-event', methods=['GET', 'POST'])
-@crossdomain(origin='*')
-@jsonp
-def insertEvent():
-    try:
-        if request.method == 'POST':
-            date = request.form['date']
-            time = request.form['time']
-            name = request.form['name']
-            departments = request.form['departments']
-        elif request.method == 'GET':
-            date = request.args.get('date','')
-            time = request.args.get('time','')
-            name = request.args.get('name','')
-            departments = request.args.get('departments','')
-    except KeyError:
-        data = {'msg': 'FAIL'}
-        resp = Response(
-            response = json.dumps(data, 
-                separators = (',',':'),
-                default=json_util.default), 
-            status = 200, 
-            mimetype = 'application/json')
-        return resp
-    eventTime = datetime.datetime.strptime(date + ' ' + time, '%Y-%m-%d %H:%M')
-    departments = [int(n) for n in departments.split(',')]
-    result = dbHelper.insertEvent(eventTime, name, departments);
-    data = {'msg': 'SUCCESS', 'result': result}
-    resp = Response(
-        response = json.dumps(data, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')
-    return resp
+class Department(Resource):
+    deptParser = reqparse.RequestParser()
+    deptParser.add_argument('name', type = unicode, required = True, 
+        help = 'Name is required')
 
-@app.route('/insert-person', methods = ['GET', 'POST', 'PUT'])
-@crossdomain(origin='*')
-@jsonp
-def insertPerson():
-    try:
-        if request.method == 'POST':
-            name = request.form['name']
-            departments = request.form['departments']
-        elif request.method == 'GET':
-            name = request.args.get('name','')
-            departments = request.args.get('departments','')
-    except KeyError:
-        data = {'msg': 'FAIL'}
-    departments = [int(n) for n in departments.split(',')]
-    result = dbHelper.insertPerson(name, departments)
-    data = {'msg': 'SUCCESS', 'result': result}
-    resp = Response(
-        response = json.dumps(data, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')
-    return resp
+    def post(self):
+        args = self.deptParser.parse_args()
+        return {'_id': dbHelper.insertDepartment(args['name'])}, 201
 
+person_fields = {
+    '_id': fields.Integer,
+    'name': fields.String,
+    'departments': fields.List(fields.Integer)
+}
+people_fields = {
+    'people': fields.List(fields.Nested(person_fields))
+}
 
-@app.route('/insert-department', methods = ['GET', 'POST'])
-@crossdomain(origin='*')
-@jsonp
-def insertDepartment():
-    try:
-        if request.method == 'POST':
-            name = request.form['name']
-        elif request.method == 'GET':
-            name = request.args.get('name','')
-    except KeyError:
-        data = {'msg': 'FAIL'}
-    result = dbHelper.insertDepartment(name)
-    data = {'msg': 'SUCCESS', 'result': result}
-    resp = Response(
-        response = json.dumps(data, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')
-    return resp
+class People(Resource):
+    deptParser = reqparse.RequestParser()
+    deptParser.add_argument('departments', type = unicode, required = True, 
+        help = 'Departments are required')
 
-@app.route('/insert-agenda', methods = ['GET', 'POST'])
-@crossdomain(origin='*')
-@jsonp
-def insertAgenda():
-    try:
-        if request.method == 'POST':
-            name = request.form['name']
-            eventID = request.form['eventID']
-        elif request.method == 'GET':
-            name = request.args.get('name','')
-            eventID = request.args.get('eventID','')
-    except KeyError:
-        data = {'msg': 'FAIL'}
-    result = dbHelper.insertAgenda(name, eventID)
-    data = {'msg': 'SUCCESS', 'result': result}
-    resp = Response(
-        response = json.dumps(data, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')
-    return resp
+    @marshal_with(people_fields)
+    def get(self):
+        args = self.deptParser.parse_args()
+        departments = [int(n) for n in args['departments'].split(',')]
 
-@app.route('/delete-agenda', methods = ['GET', 'POST'])
-@crossdomain(origin='*')
-@jsonp
-def deleteAgenda():
-    try:
-        if request.method == 'POST':
-            agendaID = request.form['agendaID']
-            eventID = request.form['eventID']
-        elif request.method == 'GET':
-            agendaID = request.args.get('agendaID','')
-            eventID = request.args.get('eventID','')
-    except KeyError:
-        data = {'msg': 'FAIL'}
-    agendaID = int(agendaID)
-    result = dbHelper.deleteAgenda(agendaID, eventID)
-    data = {'msg': 'SUCCESS', 'result': result}
-    resp = Response(
-        response = json.dumps(data, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')
-    return resp
+        return {'people': dbHelper.getPeople(departments)}
+
+class Person(Resource):
+    personParser = reqparse.RequestParser()
+    personParser.add_argument('name', type = unicode, required = True, 
+        help = 'Name is required')
+    personParser.add_argument('departments', type = unicode, required = True, 
+        help = 'Departments are required')
+
+    def post(self):
+        args = self.personParser.parse_args()
+        departments = [int(n) for n in args['departments'].split(',')]
+
+        return {'_id': dbHelper.insertPerson(args['name'], departments)}, 201
+
+agenda_fields = {
+    '_id': fields.Integer,
+    'name': fields.String,
+    'description': fields.String
+}
+agendas_fields = {
+    'agendas': fields.List(fields.Nested(agenda_fields))
+}
+
+class Agendas(Resource):
+    idParser = reqparse.RequestParser()
+    idParser.add_argument('eventID', type = unicode, required = True, 
+        help = 'EventID is required')
+
+    @marshal_with(agendas_fields)
+    def get(self):
+        args = self.idParser.parse_args()
+        return {'agendas': dbHelper.getAgendas(args['eventID'])}
+
+class Agenda(Resource):
+    idParser = reqparse.RequestParser()
+    idParser.add_argument('eventID', type = unicode, required = True, 
+        help = 'EventID is required')
+    agendaParser = reqparse.RequestParser()
+    agendaParser.add_argument('eventID', type = unicode, required = True, 
+        help = 'EventID is required')
+    agendaParser.add_argument('name', type = unicode, required = True, 
+        help = 'Name is required')
+
+    @marshal_with(agenda_fields)
+    def post(self):
+        args = self.agendaParser.parse_args()
+
+        return dbHelper.insertAgenda(args['name'], args['eventID'])
+
+    def delete(self, agendaID):
+        args = self.idParser.parse_args()
+
+        return {'result': str(dbHelper.deleteAgenda(agendaID, args['eventID']))}
 
 @app.errorhandler(404)
 def not_found(error=None):
@@ -274,6 +175,15 @@ def not_found(error=None):
     resp.status_code = 404
 
     return resp
+
+api.add_resource(Events, '/events')
+api.add_resource(Event, '/event')
+api.add_resource(Departments, '/departments')
+api.add_resource(Department, '/department')
+api.add_resource(People, '/people')
+api.add_resource(Person, '/person')
+api.add_resource(Agendas, '/agendas')
+api.add_resource(Agenda, '/agenda', '/agenda/<int:agendaID>')
 
 if __name__ == '__main__':
     app.debug=True

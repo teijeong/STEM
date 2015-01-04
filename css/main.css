@@ -15,3 +15,11 @@
 .remove-agenda {
     float: right;
 }
+
+#participants {
+    line-height: 2em;
+}
+
+#absentees {
+    line-height: 2em;
+}

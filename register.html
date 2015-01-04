@@ -24,7 +24,9 @@
         <script src="js/bootstrap.min.js"></script>
 
         <script>
-
+            /*/*/var server = "https://stem-flask.herokuapp.com/"
+            //*/var server = "http://localhost:5000/"
+            
             $(document).ready(function() {
             });
             
@@ -35,13 +37,11 @@
                 var depts = $("#eventDepartments").val();
 
                 $.ajax({
-                    url: "https://stem-flask.herokuapp.com/insert-event",
-                    dataType: "jsonp",
+                    url: server + "event",
                     type: "POST",
-                    jsonp: "callback",
                     data: {"date": date, "time": time, "name": name, "departments": depts},
                     success: function(data) {
-                        alert(data);
+                        alert(JSON.stringify(data));
                     }
                 });
             });
@@ -50,13 +50,11 @@
                 var name = $("#departmentName").val();
 
                 $.ajax({
-                    url: "https://stem-flask.herokuapp.com/insert-department",
-                    dataType: "jsonp",
+                    url: server + "department",
                     type: "POST",
-                    jsonp: "callback",
                     data: {"name": name},
                     success: function(data) {
-                        alert(data);
+                        alert(JSON.stringify(data));
                     }
                 });
             });
@@ -66,13 +64,11 @@
                 var depts = $("#personDepartments").val();
 
                 $.ajax({
-                    url: "https://stem-flask.herokuapp.com/insert-person",
-                    dataType: "jsonp",
+                    url: server + "person",
                     type: "POST",
-                    jsonp: "callback",
                     data: {"name": name, "departments": depts},
                     success: function(data) {
-                        alert(data);
+                        alert(JSON.stringify(data));
                     }
                 });
             });

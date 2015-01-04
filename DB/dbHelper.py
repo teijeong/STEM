@@ -6,6 +6,48 @@ import pymongo
 mongoURI ='mongodb://heroku_app32258670:5hcl5oso685va7pcpo8e9ku1f5@ds061360.mongolab.com:61360/heroku_app32258670'
 db = MongoClient(mongoURI).heroku_app32258670
 
+def getEvents(date):
+    data = []
+    start = datetime.datetime.strptime(date, '%Y-%m-%d')
+    end = start + datetime.timedelta(days=1)
+    cur = db.events.find({'time':{'$gte':start, '$lt':end}})
+    for event in cur:
+        event['time'] = str(event['time'])
+        data.append(event)
+    return data
+
+def getDepartments(deptID = None):
+    data = []
+    if deptID:
+        cur = db.departments.find({'_id': deptID})
+    else:
+        cur = db.departments.find()
+    for dept in cur:
+        data.append(dept)
+    return data
+
+def getPeople(departments):
+    data = []
+    cur = db.people.find({'department':{'$in':departments}})
+    for person in cur:
+        data.append(person)
+    return data
+
+def getAgendas(eventID):
+    data = []
+    event = getEvent(eventID)
+    if event is None:
+        return data
+    cur = db.agendas.find({'_id':{'$in':event['agendas']}})
+    for agenda in cur:
+        data.append(agenda)
+    return data
+
+def getEvent(eventID):
+    cur = db.events.find({'_id': eventID})
+    if cur.count() > 0:
+        return cur[0]
+    return None
 
 def insertEvent(time, name, department):
     if not (type(department) is list):
@@ -45,7 +87,7 @@ def insertAgenda(name, eventID):
         agendaID = cur[0]['_id'] + 1
     else:
         agendaID = 0
-    agenda = {'_id': agendaID, 'name': name}
+    agenda = {'_id': agendaID, 'name': name, 'description': ''}
     db.agendas.insert(agenda)
 
     cur = db.events.update({'_id': eventID}, {'$addToSet': {'agendas': agendaID}})
