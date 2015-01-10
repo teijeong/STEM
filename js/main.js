@@ -13,19 +13,20 @@ var agendas = [];
 var eventDates = [];
 var eventMonths = [];
 
+
 $(document).ready(function() {
     
     var date = new Date();
-    updateEventDates(date.getFullYear(), date.getMonth() + 1);
-    date.setMonth(date.getMonth() - 1);
-    updateEventDates(date.getFullYear(), date.getMonth() + 1);
-    date.setMonth(date.getMonth() + 2);
-    updateEventDates(date.getFullYear(), date.getMonth() + 1);
+
+    $("#dateInput").change(loadEvents);
+    $("#events").change(updateEvent);
 
     $("#dateInput").datepicker({
         beforeShowDay: function(date) {
             var monthString = jQuery.datepicker.formatDate("yy-mm", date);
             var dateString = jQuery.datepicker.formatDate("yy-mm-dd", date);
+            if (dateString.substring(8) == "01")
+                updateEventDates(monthString.substring(0,4), monthString.substring(5), true);
             return [eventDates.indexOf(dateString) != -1];
         },
         dateFormat: "yy-mm-dd",
@@ -34,9 +35,11 @@ $(document).ready(function() {
 
 });
 
-function updateEventDates(year, month) {
-    if (month < 10) month = "0" + month;
-    date = year + "-" + month;
+function updateEventDates(year, month, fromDatepicker) {
+    if (month < 10) month = "0" + parseInt(month, 10);
+    var date = year + "-" + month;
+    if (eventMonths.indexOf(date) != -1) return;
+
     $.ajax({
         url: server + "events/" + date,
         crossDomain: true,
@@ -45,13 +48,14 @@ function updateEventDates(year, month) {
             eventMonths.push(date);
             $.each(data.dates, function(i, e) {
                 eventDates.push(e);
-            })
+            });
+            if (fromDatepicker) $("#dateInput").datepicker("refresh");
         }
 
     })
 }
 
-$("#loadEvents").click( function() {
+function loadEvents() {
     var date = $("#dateInput").val();
     $.ajax({
         url: server + "events",
@@ -70,9 +74,7 @@ $("#loadEvents").click( function() {
             updateEvent();
         }
     });
-});
-
-$("#events").change(updateEvent);
+}
 
 function updateEvent() {
     var idx = $("#events option:selected")[0].value;

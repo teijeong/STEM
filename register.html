@@ -3,12 +3,15 @@
     <head>
         <meta charset="utf-8" />
         <title> STEM </title>
-        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="css/bootstrap.min.css" rel="stylesheet" />
+        <link href="css/jquery-ui.min.css" rel="stylesheet" />
+        <link href="css/jquery-ui.structure.min.css" rel="stylesheet" />
+        <link href="css/jquery-ui.theme.min.css" rel="stylesheet" />
     </head>
     <body>
         <div class="container">
             <h1> Register </h1>
-            Date: <input type="date" id="dateInput" class="form-control"  /> <br />
+            Date: <input type="text" id="dateInput" class="form-control"  /> <br />
             TIME(HH:MM): <input type="text" id="timeInput" class="form-control" /><br />
             Event name: <input type="text" id="eventName" class="form-control" /><br />
             Departments: <input type="text" id="eventDepartments" class="form-control" value="0"/><br />
@@ -21,6 +24,7 @@
         </div>
 
         <script src="js/jquery-2.1.1.min.js"></script>
+        <script src="js/jquery-ui.min.js"></script>
         <script src="js/bootstrap.min.js"></script>
 
         <script>
@@ -28,6 +32,10 @@
             //*/var server = "http://localhost:5000/"
             
             $(document).ready(function() {
+                $("#dateInput").datepicker({
+                    dateFormat: "yy-mm-dd",
+                    constrainInput: true
+                });
             });
             
             $("#registerEvent").click( function() {
