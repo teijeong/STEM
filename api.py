@@ -90,7 +90,7 @@ class Departments(Resource):
 
     @marshal_with(departments_fields)
     def get(self):
-        return dbHelper.getDepartments()
+        return {'departments': dbHelper.getDepartments()}
 
 class Department(Resource):
     deptParser = reqparse.RequestParser()

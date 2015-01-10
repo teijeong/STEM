@@ -7,115 +7,87 @@
         <link href="css/jquery-ui.min.css" rel="stylesheet" />
         <link href="css/jquery-ui.structure.min.css" rel="stylesheet" />
         <link href="css/jquery-ui.theme.min.css" rel="stylesheet" />
+        <link href="css/register.css" rel="stylesheet" />
     </head>
     <body>
         <div class="container">
-            <h1> Register </h1>
-            Date: <input type="text" id="dateInput" class="form-control"  /> <br />
-            TIME(HH:MM): <input type="text" id="timeInput" class="form-control" /><br />
-            Event name: <input type="text" id="eventName" class="form-control" /><br />
-            Departments: <input type="text" id="eventDepartments" class="form-control" value="0"/><br />
-            <button id="registerEvent" type="button" class="btn btn-primary">Register Event</button><br /><br />
-            Name: <input type="text" id="departmentName" class="form-control" /> <br />
-            <button id="registerDepartment" type="button" class="btn btn-primary">Register Department</button><br /><br />
-            Name: <input type="text" id="personName" class="form-control" /> <br />
-            Departments: <input type="text" id="personDepartments" class="form-control" value="0"/><br />
-            <button id="registerPerson" type="button" class="btn btn-primary">Register Person</button><br /><br />
+            <h1>Register</h1>
+            <h3 class="col-sm-offset-1 col-sm-11">Event</h3>
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <label for="dateInput" class="col-sm-2 control-label">Date</label>
+                    <div class="col-sm-10">
+                        <input type="text" id="dateInput" class="form-control"  />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="timeInput" class="col-sm-2 control-label">Time</label>
+                    <div class="col-sm-2">
+                        <label class="radio-inline">
+                            <input type="radio" name="AMPM" value="AM">AM
+                        </label>
+                        <label class="radio-inline">
+                            <input type="radio" name="AMPM" value="PM" checked>PM
+                        </label>
+                    </div>
+                    <label for="hour" class="col-sm-1 control-label">H</label>
+                    <div class="col-sm-2">
+                        <select class="form-control" id="hour">
+                        </select>
+                    </div>
+                    <label for="minute" class="col-sm-1 control-label">M</label>
+                    <div class="col-sm-2">
+                        <select class="form-control" id="minute">
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="eventName" class="col-sm-2 control-label">Name</label>
+                    <div class="col-sm-10">
+                        <input type="text" id="eventName" class="form-control" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="event-departmrnts" class="col-sm-2 control-label">Departments</label>
+                    <div class="col-sm-10" id="event-departments"></div>
+                </div>
+                <button id="registerEvent" type="button" class="btn btn-primary">Register Event</button>
+            </form>
+
+            <h3 class="col-sm-offset-1 col-sm-11">Department</h3>
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <label for="departmentName" class="col-sm-2 control-label">Name</label>
+                    <div class="col-sm-10">
+                        <input type="text" id="departmentName" class="form-control" />
+                    </div>
+                </div>
+                <button id="registerDepartment" type="button" class="btn btn-primary">Register Department</button>
+            </form>
+
+            <h3 class="col-sm-offset-1 col-sm-11">Person</h3>
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <label for="personName" class="col-sm-2 control-label">Name</label>
+                    <div class="col-sm-10">
+                        <input type="text" id="personName" class="form-control" /> 
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="person-departments" class="col-sm-2 control-label">Departments</label>
+                    <div class="col-sm-10" id="person-departments"></div>
+                </div>
+                <button id="registerPerson" type="button" class="btn btn-primary">Register Person</button>
+            </form>
         </div>
 
         <script src="js/jquery-2.1.1.min.js"></script>
         <script src="js/jquery-ui.min.js"></script>
         <script src="js/bootstrap.min.js"></script>
+        <script src="js/register.js"></script>
 
         <script>
-            /*/*/var server = "https://stem-flask.herokuapp.com/"
-            //*/var server = "http://localhost:5000/"
             
-            $(document).ready(function() {
-                $("#dateInput").datepicker({
-                    dateFormat: "yy-mm-dd",
-                    constrainInput: true
-                });
-            });
-            
-            $("#registerEvent").click( function() {
-                var date = $("#dateInput").val();
-                var time = $("#timeInput").val();
-                var name = $("#eventName").val();
-                var depts = $("#eventDepartments").val();
-
-                $.ajax({
-                    url: server + "event",
-                    type: "POST",
-                    data: {"date": date, "time": time, "name": name, "departments": depts},
-                    success: function(data) {
-                        alert(JSON.stringify(data));
-                    }
-                });
-            });
-
-            $("#registerDepartment").click( function() {
-                var name = $("#departmentName").val();
-
-                $.ajax({
-                    url: server + "department",
-                    type: "POST",
-                    data: {"name": name},
-                    success: function(data) {
-                        alert(JSON.stringify(data));
-                    }
-                });
-            });
-
-            $("#registerPerson").click( function() {
-                var name = $("#personName").val();
-                var depts = $("#personDepartments").val();
-
-                $.ajax({
-                    url: server + "person",
-                    type: "POST",
-                    data: {"name": name, "departments": depts},
-                    success: function(data) {
-                        alert(JSON.stringify(data));
-                    }
-                });
-            });
-
-
-
-      
-
-            function indexOf(arr, f) {
-                for (var i = 0; i < arr.length; i++) {
-                    if (f(arr[i])) return i;
-                }
-                return -1;
-            }
-
-            function addName(person, isPresent) {
-                var $nameTag = $("<span class='label person'></span>");
-                $nameTag.attr("id", "P-" + person._id);
-                $nameTag.append("[" + person._id + "] " + person.name);
-                var $deleteButton = $("<span class='glyphicon glyphicon-remove'></span>");
-                if (isPresent) {
-                    $nameTag.addClass("label-primary");
-                    $deleteButton.addClass("present-delete");
-                    $deleteButton.click(presentDelete);
-                } else {
-                    $nameTag.addClass("label-danger");
-                    $deleteButton.addClass("absent-delete");
-                    $deleteButton.click(absentDelete);
-                }
-                $nameTag.append(" ");
-                $nameTag.append($deleteButton);
-                if (!isPresent) {
-                    $nameTag.append(" ");
-                    var $restoreButton = $("<span class='glyphicon glyphicon-upload absent-restore'></span>");
-                    $restoreButton.click(absentRestore);
-                    $nameTag.append($restoreButton);
-                }
-                return $nameTag;
-            }
 
         </script>
     </body>

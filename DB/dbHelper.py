@@ -47,9 +47,12 @@ def getAgendas(eventID):
     event = getEvent(eventID)
     if event is None:
         return data
-    cur = db.agendas.find({'_id':{'$in':event['agendas']}})
-    for agenda in cur:
-        data.append(agenda)
+    try:
+        cur = db.agendas.find({'_id':{'$in':event['agendas']}})
+        for agenda in cur:
+            data.append(agenda)
+    except KeyError:
+        pass
     return data
 
 def getEvent(eventID):
