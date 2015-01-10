@@ -3,16 +3,27 @@
     <head>
         <meta charset="utf-8" />
         <title> STEM </title>
-        <link href="css/bootstrap.min.css" rel="stylesheet">
-        <link href="css/main.css" rel="stylesheet">
-        <link href"css/jquery-ui.min.css" rel="stylesheet">
-        <link href"css/jquery-ui.structure.min.css" rel="stylesheet">
-        <link href"css/jquery-ui.theme.min.css" rel="stylesheet">
+        <link href="css/bootstrap.min.css" rel="stylesheet" />
+        <link href="css/main.css" rel="stylesheet" />
+        <link href="css/jquery-ui.min.css" rel="stylesheet" />
+        <link href="css/jquery-ui.structure.min.css" rel="stylesheet" />
+        <link href="css/jquery-ui.theme.min.css" rel="stylesheet" />
     </head>
     <body>
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">STEM</a>
+            </div>
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li id="save-report"><a href="#" id="save">Save</a></li>
+                </ul>
+            </div>
+        </nav>
+        
         <div class="container">
             <h1> STEM Report </h1>
-            <input type="date" id="dateInput" class="form-control"  /> <br /><br />
+            <input type="text" id="dateInput" class="form-control"  /> <br /><br />
             <button id="loadEvents" type="button" class="btn btn-primary"> Load Events </button><br /><br />
             <select class="form-control" id="events"> </select><br /><br />
             <h3>Participants</h3>
@@ -22,7 +33,7 @@
         </div>
 
         <div class="container container-agendas">
-            <H3>Agendas</h3>
+            <h3>Agendas</h3>
 
             <ul id="agenda-list">
             </ul>

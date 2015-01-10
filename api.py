@@ -2,6 +2,7 @@
 import flask
 import datetime
 import json
+import re
 
 from flask import Flask, Response
 from flask import request
@@ -13,11 +14,13 @@ from bson import json_util
 
 from DB import dbHelper
 
-mongoURI ='mongodb://heroku_app32258670:5hcl5oso685va7pcpo8e9ku1f5@ds061360.mongolab.com:61360/heroku_app32258670'
+mongoURI = ('mongodb://heroku_app32258670:'
+    '5hcl5oso685va7pcpo8e9ku1f5@ds061360'
+    '.mongolab.com:61360/heroku_app32258670')
 db = MongoClient(mongoURI).heroku_app32258670
 app = Flask(__name__)
 api = restful.Api(app)
-CORS(app, allow_headers='Content-Type', 
+CORS(app, allow_headers='Content-Type',
     methods=['GET', 'HEAD', 'POST', 'OPTIONS', 'PUT', 'PATCH', 'DELETE'])
 
 
@@ -34,8 +37,8 @@ events_fields = {
 class Events(Resource):
 
     dateParser = reqparse.RequestParser()
-    dateParser.add_argument('date', type = unicode, required = True, 
-        help = 'Date (yyyy-mm-dd) is required')
+    dateParser.add_argument('date', type=unicode, required=True,
+        help='Date (yyyy-mm-dd) is required')
 
     @marshal_with(events_fields)
     def get(self):
@@ -45,23 +48,35 @@ class Events(Resource):
 class Event(Resource):
 
     eventParser = reqparse.RequestParser()
-    eventParser.add_argument('date', type = unicode, required = True,
-        help = 'Date is required')
-    eventParser.add_argument('time', type = unicode, required = True,
-        help = 'Time is required')
-    eventParser.add_argument('name', type = unicode, required = True,
-        help = 'Event name is required')
-    eventParser.add_argument('departments', type = unicode, required = True,
-        help = 'Departments are required')
+    eventParser.add_argument('date', type=unicode, required=True,
+        help='Date is required')
+    eventParser.add_argument('time', type=unicode, required=True,
+        help='Time is required')
+    eventParser.add_argument('name', type=unicode, required=True,
+        help='Event name is required')
+    eventParser.add_argument('departments', type=unicode, required=True,
+        help='Departments are required')
 
     def post(self):
         args = self.eventParser.parse_args()
-        eventTime = datetime.datetime.strptime(args['date'] + ' ' + args['time'], '%Y-%m-%d %H:%M')
+        eventTime = datetime.datetime.strptime(args['date'] +
+            ' ' + args['time'], '%Y-%m-%d %H:%M')
         departments = [int(n) for n in args['departments'].split(',')]
 
-        return {'_id': dbHelper.insertEvent(eventTime, args['name'], departments)}, 201
+        return {'_id': dbHelper.insertEvent(
+            eventTime, args['name'], departments)}, 201
 
+class EventDates(Resource):
 
+    def get(self, date):
+        if re.match('^[0-9]{4}-[01]?[0-9]$', date) is None:
+            return {'error': 'invalid date'}
+        date = date.split('-')
+        year = int(date[0])
+        month = int(date[1])
+        if not 1 <= month <= 12:
+            return {'error': 'invalid date'}
+        return {'dates': dbHelper.getEventDates(year, month)}
 
 depatment_fields = {
     '_id': fields.Integer,
@@ -72,15 +87,15 @@ departments_fields = {
 }
 
 class Departments(Resource):
-    
+
     @marshal_with(departments_fields)
     def get(self):
         return dbHelper.getDepartments()
 
 class Department(Resource):
     deptParser = reqparse.RequestParser()
-    deptParser.add_argument('name', type = unicode, required = True, 
-        help = 'Name is required')
+    deptParser.add_argument('name', type=unicode, required=True,
+        help='Name is required')
 
     def post(self):
         args = self.deptParser.parse_args()
@@ -97,8 +112,8 @@ people_fields = {
 
 class People(Resource):
     deptParser = reqparse.RequestParser()
-    deptParser.add_argument('departments', type = unicode, required = True, 
-        help = 'Departments are required')
+    deptParser.add_argument('departments', type=unicode, required=True,
+        help='Departments are required')
 
     @marshal_with(people_fields)
     def get(self):
@@ -109,10 +124,10 @@ class People(Resource):
 
 class Person(Resource):
     personParser = reqparse.RequestParser()
-    personParser.add_argument('name', type = unicode, required = True, 
-        help = 'Name is required')
-    personParser.add_argument('departments', type = unicode, required = True, 
-        help = 'Departments are required')
+    personParser.add_argument('name', type=unicode, required=True,
+        help='Name is required')
+    personParser.add_argument('departments', type=unicode, required=True,
+        help='Departments are required')
 
     def post(self):
         args = self.personParser.parse_args()
@@ -131,8 +146,8 @@ agendas_fields = {
 
 class Agendas(Resource):
     idParser = reqparse.RequestParser()
-    idParser.add_argument('eventID', type = unicode, required = True, 
-        help = 'EventID is required')
+    idParser.add_argument('eventID', type=unicode, required=True,
+        help='EventID is required')
 
     @marshal_with(agendas_fields)
     def get(self):
@@ -141,13 +156,13 @@ class Agendas(Resource):
 
 class Agenda(Resource):
     idParser = reqparse.RequestParser()
-    idParser.add_argument('eventID', type = unicode, required = True, 
-        help = 'EventID is required')
+    idParser.add_argument('eventID', type=unicode, required=True,
+        help='EventID is required')
     agendaParser = reqparse.RequestParser()
-    agendaParser.add_argument('eventID', type = unicode, required = True, 
-        help = 'EventID is required')
-    agendaParser.add_argument('name', type = unicode, required = True, 
-        help = 'Name is required')
+    agendaParser.add_argument('eventID', type=unicode, required=True,
+        help='EventID is required')
+    agendaParser.add_argument('name', type=unicode, required=True,
+        help='Name is required')
 
     @marshal_with(agenda_fields)
     def post(self):
@@ -167,17 +182,18 @@ def not_found(error=None):
             'message': 'Not Found: ' + request.url,
     }
     resp = Response(
-        response = json.dumps(message, 
-            separators = (',',':'),
-            default=json_util.default), 
-        status = 200, 
-        mimetype = 'application/json')
+        response=json.dumps(message,
+            separators=(',', ':'),
+            default=json_util.default),
+        status=200,
+        mimetype='application/json')
     resp.status_code = 404
 
     return resp
 
 api.add_resource(Events, '/events')
 api.add_resource(Event, '/event')
+api.add_resource(EventDates, '/events/<string:date>')
 api.add_resource(Departments, '/departments')
 api.add_resource(Department, '/department')
 api.add_resource(People, '/people')
@@ -186,5 +202,5 @@ api.add_resource(Agendas, '/agendas')
 api.add_resource(Agenda, '/agenda', '/agenda/<int:agendaID>')
 
 if __name__ == '__main__':
-    app.debug=True
+    app.debug = True
     app.run()

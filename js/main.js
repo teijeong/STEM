@@ -10,9 +10,46 @@ var agendas = [];
 /*/*/var server = "https://stem-flask.herokuapp.com/"
 //*/var server = "http://localhost:5000/"
 
+var eventDates = [];
+var eventMonths = [];
+
 $(document).ready(function() {
+    
+    var date = new Date();
+    updateEventDates(date.getFullYear(), date.getMonth() + 1);
+    date.setMonth(date.getMonth() - 1);
+    updateEventDates(date.getFullYear(), date.getMonth() + 1);
+    date.setMonth(date.getMonth() + 2);
+    updateEventDates(date.getFullYear(), date.getMonth() + 1);
+
+    $("#dateInput").datepicker({
+        beforeShowDay: function(date) {
+            var monthString = jQuery.datepicker.formatDate("yy-mm", date);
+            var dateString = jQuery.datepicker.formatDate("yy-mm-dd", date);
+            return [eventDates.indexOf(dateString) != -1];
+        },
+        dateFormat: "yy-mm-dd",
+        constrainInput: true
+    });
 
 });
+
+function updateEventDates(year, month) {
+    if (month < 10) month = "0" + month;
+    date = year + "-" + month;
+    $.ajax({
+        url: server + "events/" + date,
+        crossDomain: true,
+        type: "GET",
+        success: function(data) {
+            eventMonths.push(date);
+            $.each(data.dates, function(i, e) {
+                eventDates.push(e);
+            })
+        }
+
+    })
+}
 
 $("#loadEvents").click( function() {
     var date = $("#dateInput").val();

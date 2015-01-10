@@ -23,3 +23,7 @@
 #absentees {
     line-height: 2em;
 }
+
+body {
+    padding-top: 70px;
+}
