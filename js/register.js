@@ -7,6 +7,10 @@ $(document).ready(function() {
         constrainInput: true
     });
 
+    $("#timeInput").timepicker({
+        stepMinute: 5
+    });
+
     for (var i = 0; i < 12; i++) {
         if (i == 0)
             $("#hour").append("<option id='hr-12'>12</option>");
