@@ -27,3 +27,8 @@
 body {
     padding-top: 70px;
 }
+
+.btn-submit {
+    float: right;
+    margin-top: 20px;
+}

@@ -33,7 +33,7 @@ $(document).ready(function() {
             $("#person-departments").append(departmentSelectForm(data.departments));
             $("#event-departments").append(departmentSelectForm(data.departments));
         }
-    })
+    });
 });
 
 $("input[name=AMPM]").change( function() {
@@ -46,16 +46,7 @@ $("input[name=AMPM]").change( function() {
 
 $("#registerEvent").click( function() {
     var date = $("#dateInput").val();
-    var isPM = true;
-    var hour = $("#hour option:selected")[0].value;
-    var minute = $("#minute option:selected")[0].value;
-
-    if ($("input[name=AMPM]:checked").val() == "AM") isPM = false;
-
-    if (isPM && hour != "12") hour = parseInt(hour, 10) + 12;
-
-    var time = hour + ":" + minute;
-    console.log(time);
+    var time = $("#timeInput").val();
     var name = $("#eventName").val();
     var depts = "";
     $("#event-departments input:checked").each(function() {

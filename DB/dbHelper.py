@@ -55,6 +55,19 @@ def getAgendas(eventID):
         pass
     return data
 
+def getNextAgendas(eventID):
+    data = []
+    event = getEvent(eventID)
+    if event is None:
+        return data
+    try:
+        cur = db.agendas.find({'_id':{'$in':event['nextAgendas']}})
+        for agenda in cur:
+            data.append(agenda)
+    except KeyError:
+        pass
+    return event, data
+
 def getEvent(eventID):
     cur = db.events.find({'_id': eventID})
     if cur.count() > 0:
@@ -75,6 +88,21 @@ def insertEvent(time, name, department):
     event = {'_id': eventID, 'time':time.replace(microsecond=0),
         'name': name, 'department': department}
     return db.events.insert(event)
+
+def updateNextEvent(eventID, nextEventID):
+    cur = db.events.find({'_id':eventID})
+    cur2 = db.events.find({'_id':nextEventID})
+
+    if cur.count() == 0 or cur2.count == 0:
+        return None
+    try:
+        cur = db.events.update({'_id':cur[0]['nextEvent']}, {'$pull': {'prevEvents': eventID}})
+    except KeyError:
+        pass
+    cur = db.events.update({'_id': eventID}, {'$set': {'nextEvent': nextEventID}})
+    cur = db.events.update({'_id': nextEventID},
+        {'$addToSet': {'prevEvents': eventID}})
+    return eventID
 
 def insertPerson(name, department):
     if not type(department) is list:
@@ -108,4 +136,20 @@ def insertAgenda(name, eventID):
 
 def deleteAgenda(agendaID, eventID):
     return db.events.update({'_id': eventID}, {'$pull': {'agendas': agendaID}})
+
+def insertNextAgenda(name, eventID):
+    cur = db.agendas.find().sort('_id', pymongo.DESCENDING).limit(1)
+    if cur.count() > 0:
+        agendaID = cur[0]['_id'] + 1
+    else:
+        agendaID = 0
+    agenda = {'_id': agendaID, 'name': name, 'description': ''}
+    db.agendas.insert(agenda)
+
+    cur = db.events.update({'_id': eventID}, 
+        {'$addToSet': {'nextAgendas': agendaID}})
+    return agenda
+
+def deleteAgenda(agendaID, eventID):
+    return db.events.update({'_id': eventID}, {'$pull': {'nextAgendas': agendaID}})
 

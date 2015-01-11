@@ -1,6 +1,7 @@
 
 
 var events;
+var nextEvents;
 var participants = [];
 var absentees = [];
 
@@ -20,6 +21,8 @@ $(document).ready(function() {
 
     $("#dateInput").change(loadEvents);
     $("#events").change(updateEvent);
+    $("#date-next-event").change(loadNextEvents);
+    $("#save-next-event").click(uploadNextEvent);
 
     $("#dateInput").datepicker({
         beforeShowDay: function(date) {
@@ -31,6 +34,31 @@ $(document).ready(function() {
         },
         dateFormat: "yy-mm-dd",
         constrainInput: true
+    });
+    $("#date-next-event").datepicker({
+        beforeShowDay: function(date) {
+            if ($("#existing-event:checked").length === 0) return [true];
+            var monthString = jQuery.datepicker.formatDate("yy-mm", date);
+            var dateString = jQuery.datepicker.formatDate("yy-mm-dd", date);
+            if (dateString.substring(8) == "01")
+                updateEventDates(monthString.substring(0,4), monthString.substring(5), true);
+            return [eventDates.indexOf(dateString) != -1];
+        },
+        dateFormat: "yy-mm-dd",
+        constrainInput: true
+    });
+
+    $.ajax({
+        url: server + "departments",
+        type: "GET",
+        crossDomain: true,
+        success: function(data) {
+            $("#departments-next-event").append(departmentSelectForm(data.departments));
+        }
+    });
+
+    $("#time-next-event").timepicker({
+        stepMinute: 5
     });
 
 });
@@ -50,6 +78,7 @@ function updateEventDates(year, month, fromDatepicker) {
                 eventDates.push(e);
             });
             if (fromDatepicker) $("#dateInput").datepicker("refresh");
+            if (fromDatepicker) $("#date-next-event").datepicker("refresh");
         }
 
     })
@@ -76,9 +105,37 @@ function loadEvents() {
     });
 }
 
+function loadNextEvents(){
+    var date = $("#date-next-event").val();
+    $("#name-next-event").replaceWith(
+        "<select class='form-control' id='name-next-event'></select>");
+    $("#name-next-event").change(updateNextEventDetails);
+
+    $.ajax({
+        url: server + "events",
+        crossDomain: true,
+        type: "GET",
+        data: {"date": date},
+        success: function(data) {
+            nextEvents = data.events;
+            $("#name-next-event").empty();
+            $.each(data.events, function(i, e) {
+                $("#name-next-event").append("<option class='events' value=" + i + ">[" + e.time + "] " + e.name + "</option><br />");
+            });
+            if ($("#existing-event:checked").length === 1) {
+                var idx = $("#name-next-event option:selected")[0].value;
+                updateNextEventDetails();
+            }
+        }
+    });
+}
+
 function updateEvent() {
     var idx = $("#events option:selected")[0].value;
     currentEvent = events[idx];
+    if ($("#existing-event:checked").length === 0) {
+        applyDepartmentSelection(currentEvent.department);
+    }
 
     $.ajax({
         url: server + "people",
@@ -93,8 +150,13 @@ function updateEvent() {
             updatePeople();
         }
     });
-    $(".container-agendas").css("visibility","visible");
+    $("#participants-header").css("visibility", "visible");
+    $(".container-prev-agendas").css("visibility", "visible");
+    $(".container-agendas").css("visibility", "visible");
+    $(".container-next-meeting").css("visibility", "visible");
+    updatePrevAgendas();
     updateAgendas();
+    updateNextEvent();
 }
 
 function updatePeople() {
@@ -124,10 +186,68 @@ function updateAgendas() {
                 $("#agenda-list").append("<li id=agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
             });
 
-            $("#agendas").append("<button class='btn btn-primary' id='add-agenda'>Add Agenda</button>");
+            $("#agendas").append("<button class='btn btn-primary btn-submit' id='add-agenda'>Add Agenda</button>");
             $("#add-agenda").click(function () {
                 $("#agendas").append(newAgendaForm());
                 $("#add-agenda").remove();
+            });
+        }
+    });
+}
+
+function updatePrevAgendas() {
+    $("#prev-agendas").empty();
+    $("#prev-agenda-list").empty();
+    if (!currentEvent.prevEvents) return;
+
+    $.each(currentEvent.prevEvents, function(i,eid) {
+        $.ajax({
+            url: server + "next-agendas",
+            crossDomain: true,
+            type: "GET",
+            data: {eventID: eid},
+            success: function(data) {
+                var listClass = "prev-agenda-" + data.event._id;
+                $("#prev-agendas").append("<div class='" + listClass + "'></div>");
+                $("#prev-agendas " + listClass).append(
+                    "<h4>[" + data.event._id + "] " + data.event.name + "</h4>");
+                $("#prev-agenda-list").append(
+                    "<h4>[" + data.event._id + "] " + data.event.name + "</h4>");
+                $("#prev-agenda-list").append("<ul class='" + listClass + "'></ul>");
+                listClass = "." + listClass;
+                $.each(data.agendas, function(i, agenda) {
+                    $("#prev-agendas " + listClass).append(prevAgendaForm(agenda));
+                    $("#prev-agenda-list " + listClass).append("<li id=prev-agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
+                });
+            }
+        });
+    });
+}
+
+function updateNextEvent() {
+    if (!(eventID = currentEvent.nextEvent))
+        return;
+    $.ajax({
+        url: server + "next-agendas",
+        crossDomain: true,
+        type: "GET",
+        data: {eventID: eventID},
+        success: function(data) {
+            $("#existing-event").prop("checked", true);
+            var datetime = data.event.time;
+            $("#date-next-event").val(
+                datetime.substring(0,10));
+            $("#time-next-event").val(
+                datetime.substring(11,16));
+            $("#time-next-event").prop("disabled", true);
+            $("#name-next-event").replaceWith(
+                "<input type='text' class='form-control' id='name-next-event' value='["
+                + datetime + "] " + data.event.name + "' />");
+            $("#name-next-event").prop("disabled", true);
+            applyDepartmentSelection(data.event.department);
+            $("#departments-next-event input").prop("disabled", true);
+            $.each(data.agendas, function(i, agenda) {
+                $("#next-agendas").append(nextAgendaForm(agenda));
             });
         }
     });
@@ -272,7 +392,7 @@ function registerAgenda(name, eventID) {
             $("#form-new-agenda").remove();
             $("#agendas").append(agendaForm(result));
             $("#agenda-list").append("<li id=agenda-list-item-" + result._id + ">" + result.name + "</li>");
-            var $btn = $("<button class='btn btn-primary' id='add-agenda'>Add Agenda</button>");
+            var $btn = $("<button class='btn btn-primary btn-submit' id='add-agenda'>Add Agenda</button>");
             $btn.click(function () {
                 $("#agendas").append(newAgendaForm());
                 $("#add-agenda").remove();
@@ -314,5 +434,180 @@ function agendaForm(agenda) {
     return $agendaForm;
 }
 
-$(document).ready(function () {
+//Create agenda form
+function prevAgendaForm(agenda) {
+    var $agendaForm = $("<form id='prev-agenda-" + agenda._id + "'></form>");
+    $agendaForm.append("<div class='form-group'><label>&lt;Agenda " + agenda._id + "&gt; " + agenda.name + "</label></div>");
+    $agendaForm.append("<div class='form-group'><label>Description</label><textarea class='form-control' rows='5'></textarea></div>");
+    return $agendaForm;
+}
+
+function departmentSelectForm(depts) {
+    var $departments = $("<div></div>");
+    $.each(depts, function(i,e) {
+        $departments.append("<label class='checkbox-inline'>" +
+            "<input type='checkbox' value='" + e._id + "'>" 
+            + e.name + "</label>");
+    });
+    return $departments;
+}
+
+function applyDepartmentSelection(depts) {
+    var depts = depts;
+    $("#departments-next-event input").each( function(i, e) {
+        if (depts.indexOf(parseInt(e.value)) === -1)
+            e.checked = false;
+        else 
+            e.checked = true;
+    });
+}
+
+$("#existing-event").change( function () {
+    if ($("#existing-event:checked").length === 1) {
+        $("#time-next-event").prop("disabled", true);
+        $("#name-next-event").replaceWith("<select class='form-control' id='name-next-event'></select>");
+        $("#departments-next-event input").prop("disabled", true);
+    } else {
+        $("#time-next-event").prop("disabled", false);
+        $("#name-next-event").replaceWith("<input class='form-control' type='text' id='name-next-event' />");
+        $("#departments-next-event input").prop("disabled", false);
+        
+        var idx = $("#events option:selected")[0].value;
+        applyDepartmentSelection(currentEvent.department);
+    }
+    $("#name-next-event").change(updateNextEventDetails);
 });
+
+function updateNextEventDetails() {
+    if ($("#existing-event:checked").length === 1) {
+        var idx = $("#name-next-event option:selected")[0].value;
+        $("#time-next-event").val(nextEvents[idx].time.substring(11,16));
+        applyDepartmentSelection(nextEvents[idx].department);
+    }
+}
+
+$("#add-next-agenda").click( function () {
+    $("#next-agendas").append(newNextAgendaForm());
+    $("#add-next-agenda").remove();
+});
+
+
+//Create new agenda register form
+function newNextAgendaForm() {
+    var $agendaForm = $("<form id='form-new-next-agenda' class='form-inline'></form>");
+    var $input = $("<div class='form-group'></div>");
+    $input.append("<input type='text' id='new-next-agenda-name'></input>");
+    var $btn = $("<button class='btn btn-default' type='submit' id='add-next-agenda'>Add</button>");
+    $input.append(" ");
+    $input.append($btn);
+    $agendaForm.append($input);
+    $agendaForm.submit( function(event) { 
+        event.preventDefault();
+        registerNextAgenda($("#new-next-agenda-name").val(), currentEvent._id); 
+    });
+    return $agendaForm;
+}
+
+//Register new agenda and update layout
+function registerNextAgenda(name, eventID) {
+    $.ajax({
+        url: server + "next-agenda",
+        crossDomain: true,
+        type: "POST",
+        data: {
+            name: name,
+            eventID: eventID
+        },
+        success: function (result) {
+            $("#form-new-next-agenda").remove();
+            $("#next-agendas").append(nextAgendaForm(result));
+            var $btn = $("<button class='btn btn-primary btn-submit' id='add-next-agenda'>Add Agenda</button>");
+            $btn.click(function () {
+                $("#next-agendas").append(newNextAgendaForm());
+                $("#add-next-agenda").remove();
+            });
+            $("#next-agendas").append($btn);
+        }
+    });
+}
+
+function removeNextAgenda(agendaID, eventID) {
+    $.ajax({
+        url: server + "next-agenda/" + agendaID,
+        crossDomain: true,
+        type: "DELETE",
+        data: {
+            eventID: eventID
+        },
+        success: function (data) {
+            var formID = "#next-agenda-" + agendaID;
+            console.log(formID);
+            $(formID).remove();
+        }
+    });
+}
+
+//Create agenda form
+function nextAgendaForm(agenda) {
+    var $agendaForm = $("<form id='next-agenda-" + agenda._id + "'></form>");
+    $agendaForm.append("<div class='form-group'><label>&lt;Agenda " + agenda._id + "&gt; " + agenda.name + "</label></div>");
+    var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>")
+    $deleteBtn.click( function(event) {
+        event.preventDefault();
+        agendaID = $(this).parent().parent().attr('id').substring(12);
+        removeNextAgenda(agendaID, currentEvent._id);
+    });
+    $(".form-group", $agendaForm).append($deleteBtn);
+    return $agendaForm;
+}
+
+
+function uploadNextEvent() {
+    if ($("#existing-event:checked").length === 1) {
+        var idx = $("#name-next-event option:selected")[0].value;
+        putNextEvent(nextEvents[idx]._id);
+    } else {
+        registerEvent();
+    }
+
+    function putNextEvent(nextEventID) {
+        $.ajax({
+            url: server + "event/" + currentEvent._id,
+            crossDomain: true,
+            type: "PUT",
+            data: {
+                nextEventID: nextEventID
+            },
+            success: function (data) {
+                alert(JSON.stringify(data));
+            }
+        });
+    }
+
+    function registerEvent() {
+        var date = $("#date-next-event").val();
+        var time = $("#time-next-event").val();
+        var name = $("#name-next-event").val();
+        var depts = "";
+        $("#departments-next-event input:checked").each(function() {
+            depts = depts + "," + $(this).val();
+        });
+        if (depts.length > 0) depts = depts.substring(1);
+        
+        if (date.length == 0 || name.length == 0 || depts.length == 0) {
+            alert("Fill out all the forms");
+            return;
+        }
+
+        $.ajax({
+            url: server + "event",
+            type: "POST",
+            crossDomain: true,
+            data: {"date": date, "time": time, "name": name, "departments": depts},
+            success: function(data) {
+                updateNextEvent(data._id);
+            }
+        });
+    }
+}
+

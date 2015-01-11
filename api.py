@@ -28,7 +28,11 @@ event_fields = {
     '_id': fields.String,
     'department': fields.List(fields.Integer),
     'name': fields.String,
-    'time': fields.String
+    'time': fields.String,
+    'agendas': fields.List(fields.Integer),
+    'nextAgendas': fields.List(fields.Integer),
+    'nextEvent': fields.String,
+    'prevEvents': fields.List(fields.String)
 }
 events_fields = {
     'events': fields.List(fields.Nested(event_fields))
@@ -65,6 +69,16 @@ class Event(Resource):
 
         return {'_id': dbHelper.insertEvent(
             eventTime, args['name'], departments)}, 201
+
+    def put(self, eventID):
+        idParser = reqparse.RequestParser()
+        idParser.add_argument('nextEventID', type=unicode, default=None)
+        args = idParser.parse_args()
+
+        if args['nextEventID'] is None:
+            return {'msg': 'No event ID'}, 204
+
+        return {'_id': dbHelper.updateNextEvent(eventID, args['nextEventID'])};
 
 class EventDates(Resource):
 
@@ -143,6 +157,10 @@ agenda_fields = {
 agendas_fields = {
     'agendas': fields.List(fields.Nested(agenda_fields))
 }
+event_and_agendas_fields = {
+    'event': fields.Nested(event_fields),
+    'agendas': fields.List(fields.Nested(agenda_fields))
+}
 
 class Agendas(Resource):
     idParser = reqparse.RequestParser()
@@ -175,6 +193,38 @@ class Agenda(Resource):
 
         return {'result': str(dbHelper.deleteAgenda(agendaID, args['eventID']))}
 
+class NextAgendas(Resource):
+    idParser = reqparse.RequestParser()
+    idParser.add_argument('eventID', type=unicode, required=True,
+        help='EventID is required')
+
+    @marshal_with(event_and_agendas_fields)
+    def get(self):
+        args = self.idParser.parse_args()
+        event, agendas = dbHelper.getNextAgendas(args['eventID'])
+        return {'event': event, 'agendas': agendas}
+
+class NextAgenda(Resource):
+    idParser = reqparse.RequestParser()
+    idParser.add_argument('eventID', type=unicode, required=True,
+        help='EventID is required')
+    agendaParser = reqparse.RequestParser()
+    agendaParser.add_argument('eventID', type=unicode, required=True,
+        help='EventID is required')
+    agendaParser.add_argument('name', type=unicode, required=True,
+        help='Name is required')
+
+    @marshal_with(agenda_fields)
+    def post(self):
+        args = self.agendaParser.parse_args()
+
+        return dbHelper.insertNextAgenda(args['name'], args['eventID'])
+
+    def delete(self, agendaID):
+        args = self.idParser.parse_args()
+
+        return {'result': str(dbHelper.deleteNextAgenda(agendaID, args['eventID']))}
+
 @app.errorhandler(404)
 def not_found(error=None):
     message = {
@@ -192,7 +242,7 @@ def not_found(error=None):
     return resp
 
 api.add_resource(Events, '/events')
-api.add_resource(Event, '/event')
+api.add_resource(Event, '/event', '/event/<string:eventID>')
 api.add_resource(EventDates, '/events/<string:date>')
 api.add_resource(Departments, '/departments')
 api.add_resource(Department, '/department')
@@ -200,6 +250,8 @@ api.add_resource(People, '/people')
 api.add_resource(Person, '/person')
 api.add_resource(Agendas, '/agendas')
 api.add_resource(Agenda, '/agenda', '/agenda/<int:agendaID>')
+api.add_resource(NextAgendas, '/next-agendas')
+api.add_resource(NextAgenda, '/next-agenda', '/agenda/<int:agendaID>')
 
 if __name__ == '__main__':
     app.debug = True
