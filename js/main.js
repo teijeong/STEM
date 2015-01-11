@@ -8,7 +8,7 @@ var absentees = [];
 var currentEvent;
 var agendas = [];
 
-/*/*/var server = "https://stem-flask.herokuapp.com/"
+/*/*var server = "https://stem-flask.herokuapp.com/"
 //*/var server = "http://localhost:5000/"
 
 var eventDates = [];
@@ -186,10 +186,10 @@ function updateAgendas() {
                 $("#agenda-list").append("<li id=agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
             });
 
-            $("#agendas").append("<button class='btn btn-primary btn-submit' id='add-agenda'>Add Agenda</button>");
-            $("#add-agenda").click(function () {
+            $("#agendas").append("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
+            $("#add-new-agenda").click(function () {
                 $("#agendas").append(newAgendaForm());
-                $("#add-agenda").remove();
+                $("#add-new-agenda").remove();
             });
         }
     });
@@ -225,8 +225,9 @@ function updatePrevAgendas() {
 }
 
 function updateNextEvent() {
-    if (!(eventID = currentEvent.nextEvent))
+    if (!(eventID = currentEvent._id))
         return;
+    $("#next-agendas").empty();
     $.ajax({
         url: server + "next-agendas",
         crossDomain: true,
@@ -392,10 +393,10 @@ function registerAgenda(name, eventID) {
             $("#form-new-agenda").remove();
             $("#agendas").append(agendaForm(result));
             $("#agenda-list").append("<li id=agenda-list-item-" + result._id + ">" + result.name + "</li>");
-            var $btn = $("<button class='btn btn-primary btn-submit' id='add-agenda'>Add Agenda</button>");
+            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
             $btn.click(function () {
                 $("#agendas").append(newAgendaForm());
-                $("#add-agenda").remove();
+                $("#add-new-agenda").remove();
             });
             $("#agendas").append($btn);
         }
@@ -446,7 +447,7 @@ function departmentSelectForm(depts) {
     var $departments = $("<div></div>");
     $.each(depts, function(i,e) {
         $departments.append("<label class='checkbox-inline'>" +
-            "<input type='checkbox' value='" + e._id + "'>" 
+            "<input type='checkbox' value='" + e._id + "'>"
             + e.name + "</label>");
     });
     return $departments;
@@ -457,7 +458,7 @@ function applyDepartmentSelection(depts) {
     $("#departments-next-event input").each( function(i, e) {
         if (depts.indexOf(parseInt(e.value)) === -1)
             e.checked = false;
-        else 
+        else
             e.checked = true;
     });
 }
@@ -471,7 +472,7 @@ $("#existing-event").change( function () {
         $("#time-next-event").prop("disabled", false);
         $("#name-next-event").replaceWith("<input class='form-control' type='text' id='name-next-event' />");
         $("#departments-next-event input").prop("disabled", false);
-        
+
         var idx = $("#events option:selected")[0].value;
         applyDepartmentSelection(currentEvent.department);
     }
@@ -486,9 +487,9 @@ function updateNextEventDetails() {
     }
 }
 
-$("#add-next-agenda").click( function () {
+$("#add-new-next-agenda").click( function () {
     $("#next-agendas").append(newNextAgendaForm());
-    $("#add-next-agenda").remove();
+    $("#add-new-next-agenda").remove();
 });
 
 
@@ -501,9 +502,9 @@ function newNextAgendaForm() {
     $input.append(" ");
     $input.append($btn);
     $agendaForm.append($input);
-    $agendaForm.submit( function(event) { 
+    $agendaForm.submit( function(event) {
         event.preventDefault();
-        registerNextAgenda($("#new-next-agenda-name").val(), currentEvent._id); 
+        registerNextAgenda($("#new-next-agenda-name").val(), currentEvent._id);
     });
     return $agendaForm;
 }
@@ -521,10 +522,10 @@ function registerNextAgenda(name, eventID) {
         success: function (result) {
             $("#form-new-next-agenda").remove();
             $("#next-agendas").append(nextAgendaForm(result));
-            var $btn = $("<button class='btn btn-primary btn-submit' id='add-next-agenda'>Add Agenda</button>");
+            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-next-agenda'>Add Agenda</button>");
             $btn.click(function () {
+                $("#add-new-next-agenda").remove();
                 $("#next-agendas").append(newNextAgendaForm());
-                $("#add-next-agenda").remove();
             });
             $("#next-agendas").append($btn);
         }
@@ -564,7 +565,7 @@ function nextAgendaForm(agenda) {
 
 function uploadNextEvent() {
     if ($("#existing-event:checked").length === 1) {
-        var idx = $("#name-next-event option:selected")[0].value;
+        var idx = $("#name-next-event option:selected")[0].value || $("#name-next-event").val();
         putNextEvent(nextEvents[idx]._id);
     } else {
         registerEvent();
@@ -593,7 +594,7 @@ function uploadNextEvent() {
             depts = depts + "," + $(this).val();
         });
         if (depts.length > 0) depts = depts.substring(1);
-        
+
         if (date.length == 0 || name.length == 0 || depts.length == 0) {
             alert("Fill out all the forms");
             return;

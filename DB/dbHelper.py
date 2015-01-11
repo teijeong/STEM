@@ -146,10 +146,10 @@ def insertNextAgenda(name, eventID):
     agenda = {'_id': agendaID, 'name': name, 'description': ''}
     db.agendas.insert(agenda)
 
-    cur = db.events.update({'_id': eventID}, 
+    cur = db.events.update({'_id': eventID},
         {'$addToSet': {'nextAgendas': agendaID}})
     return agenda
 
-def deleteAgenda(agendaID, eventID):
+def deleteNextAgenda(agendaID, eventID):
     return db.events.update({'_id': eventID}, {'$pull': {'nextAgendas': agendaID}})
 

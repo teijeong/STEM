@@ -251,7 +251,7 @@ api.add_resource(Person, '/person')
 api.add_resource(Agendas, '/agendas')
 api.add_resource(Agenda, '/agenda', '/agenda/<int:agendaID>')
 api.add_resource(NextAgendas, '/next-agendas')
-api.add_resource(NextAgenda, '/next-agenda', '/agenda/<int:agendaID>')
+api.add_resource(NextAgenda, '/next-agenda', '/next-agenda/<int:agendaID>')
 
 if __name__ == '__main__':
     app.debug = True
