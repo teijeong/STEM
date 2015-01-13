@@ -108,7 +108,7 @@ def insertPerson(name, department):
     if not type(department) is list:
         department = [department]
     cur = db.people.find().sort('_id', pymongo.DESCENDING).limit(1)
-	personID = 0
+    personID = 0
     if cur.count() > 0:    
         personID = cur[0]['_id'] + 1
     person = {'_id': personID, 'name': name, 'department': department}
