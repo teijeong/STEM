@@ -129,7 +129,7 @@ def insertAgenda(name, eventID):
         agendaID = cur[0]['_id'] + 1
     else:
         agendaID = 0
-    agenda = {'_id': agendaID, 'name': name, 'description': ''}
+    agenda = {'_id': agendaID, 'name': name}
     db.agendas.insert(agenda)
 
     cur = db.events.update({'_id': eventID}, 
@@ -145,7 +145,7 @@ def insertNextAgenda(name, eventID):
         agendaID = cur[0]['_id'] + 1
     else:
         agendaID = 0
-    agenda = {'_id': agendaID, 'name': name, 'description': ''}
+    agenda = {'_id': agendaID, 'name': name}
     db.agendas.insert(agenda)
 
     cur = db.events.update({'_id': eventID},
@@ -155,3 +155,40 @@ def insertNextAgenda(name, eventID):
 def deleteNextAgenda(agendaID, eventID):
     return db.events.update({'_id': eventID}, {'$pull': {'nextAgendas': agendaID}})
 
+def createReport(eventID):
+    cur = db.events.find({'_id': eventID})
+    if cur.count() == 0:
+        return None
+    report = cur[0]
+    report['participants'] = getPeople(report['department'])
+    report['absentees'] = []
+    report['dropouts']=[]
+
+    try:
+        prevEvents = []
+        for eventID in report['prevEvents']:
+            prevEvent = {'_id': eventID, 'agendas': []}
+            _, agendas = getNextAgendas(eventID)
+            for agenda in agendas:
+                agenda['description'] = ''
+                prevEvent['agendas'].append(agenda)
+            prevEvents.append(prevEvent)
+    except KeyError:
+        pass
+    report['prevEvents'] = prevEvents
+
+    report['agendas'] = []
+    for agenda in getAgendas(eventID):
+        agenda['description'] = ''
+        report['agendas'].append(agenda)
+
+    try:
+        report['nextEvent'] = {'_id': report['nextEvent'], 'agendas': []}
+        _, agendas = getNextAgendas(eventID)
+        for agenda in agendas:
+            agenda['description'] = ''
+            report['nextEvent']['agendas'].append(agenda)
+    except KeyError:
+        pass
+
+    return report
