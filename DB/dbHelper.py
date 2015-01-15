@@ -160,7 +160,9 @@ def createReport(eventID):
     if cur.count() == 0:
         return None
     report = cur[0]
-    report['participants'] = getPeople(report['department'])
+    report['participants'] = []
+    for person in getPeople(report['department']):
+        report['participants'].append({'_id': person['_id'], 'name': person['name']})    
     report['absentees'] = []
     report['dropouts']=[]
 
@@ -190,5 +192,76 @@ def createReport(eventID):
             report['nextEvent']['agendas'].append(agenda)
     except KeyError:
         pass
-
+    
+    db.reports.insert(report)
     return report
+
+def updateReportParticipants(reportID, restoreDropouts = False):
+    cur = db.reports.find({'_id': reportID})
+    if cur.count() == 0:
+        if not createReport(reportID):
+            return None
+        cur = db.reports.find({'_id': reportID})
+    report = cur[0]
+
+    report['participants'] = []
+    absentees = report['absentees']
+    report['absentees'] = []
+    if restoreDropouts:
+        report['dropouts'] = []
+
+    for person in getPeople(report['department']):
+        for p in absentees:
+            if person['_id'] == p['_id']:
+                report['absentees'].append(p)
+                continue
+        for p in report['dropouts']:
+            if person['_id'] == p['_id']:
+                continue
+        report['participants'].append({'_id': person['_id'], 'name': person['name']})    
+
+    db.reports.update({'_id': reportID}, report)
+    return report
+
+def updateReportAgenda(reportID, agendaID, description):
+    return db.reports.update(
+        {'_id': reportID, 'agendas._id': agendaID},
+        {'$set': {'agendas.$.description': description}})
+
+def updateReportPrevAgenda(reportID, prevEventID, agendaID, description):
+    cur = db.reports.find({'_id': reportID})
+    if cur.count() == 0:
+        return None
+
+    report = cur[0]
+    idx = 0
+    for prevEvent in report['prevEvents']:
+        if prevEvent['_id'] == prevEventID:
+            break
+        idx += 1
+
+    if idx >= len(report['prevEvents']):
+        return None
+    
+    idx2 = 0
+    for agenda in report['prevEvents'][idx]['agendas']:
+        if agenda['_id'] == agendaID:
+            break
+        idx2 += 1
+
+    agenda = 'prevEvents.' + str(idx) + '.agendas.' + str(idx2) + '.description'
+    
+    return db.reports.update(
+        {'_id': reportID},
+        {'$set': {agenda: description}})
+
+def updateReportNextAgenda(reportID, agendaID, description):
+    return db.reports.update(
+        {'_id': reportID, 'nextEvent.agendas._id': agendaID},
+        {'$set': {'nextEvent.agendas.$.description': description}})
+
+def updateReport(reportID, report):
+    cur = db.reports.find({'_id': reportID})
+    if cur.count() == 0:
+        createReport(reportID)
+    return db.reports.update({'_id': reportID}, report)
