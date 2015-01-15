@@ -225,6 +225,24 @@ class NextAgenda(Resource):
 
         return {'result': str(dbHelper.deleteNextAgenda(agendaID, args['eventID']))}
 
+class Report(Resource):
+
+    def get(self, reportID):
+        return dbHelper.generateReport(reportID)
+
+    def put(self, reportID):
+        parser = reqparse.RequestParser()
+        parser.add_argument('report', type=unicode, required=True,
+            help='Report is required')
+        args = parser.parse_args()
+
+        report = json.loads(args['report'])
+
+        result = dbHelper.updateReport(reportID, report)
+
+        return {'result': result['nModified'] == 1}
+
+
 @app.errorhandler(404)
 def not_found(error=None):
     message = {
@@ -252,6 +270,7 @@ api.add_resource(Agendas, '/agendas')
 api.add_resource(Agenda, '/agenda', '/agenda/<int:agendaID>')
 api.add_resource(NextAgendas, '/next-agendas')
 api.add_resource(NextAgenda, '/next-agenda', '/next-agenda/<int:agendaID>')
+api.add_resource(Report, '/report/<string:reportID>')
 
 if __name__ == '__main__':
     app.debug = True

@@ -2,12 +2,8 @@
 
 var events;
 var nextEvents;
-var participants = [];
-var absentees = [];
-var dropouts = [];
 
 var currentEvent;
-var agendas = [];
 
 /*/*/var server = "https://stem-flask.herokuapp.com/";
 //*/var server = "http://localhost:5000/";
@@ -142,22 +138,24 @@ function updateEvent() {
     }
 
     $.ajax({
-        url: server + "people",
+        url: server + "report/" + currentEvent._id,
         crossDomain: true,
         type: "GET",
-        data: {departments: events[idx].department.join()},
         success: function(data) {
-            participants = [];
-            $.each(data.people, function(i, p) {
-                participants.push(p);
-            });
-            updatePeople();
+            report = data;
+            updateReport();
         }
     });
+
     $("#participants-header").css("visibility", "visible");
     $(".container-prev-agendas").css("visibility", "visible");
     $(".container-agendas").css("visibility", "visible");
     $(".container-next-meeting").css("visibility", "visible");
+}
+
+function updateReport() {
+
+    updatePeople();
     updatePrevAgendas();
     updateAgendas();
     updateNextEvent();
@@ -167,65 +165,50 @@ function updatePeople() {
     $("#participants").empty();
     $("#absentees").empty();
     $("#absentees-header").css("visibility","hidden");
-    $.each(participants, function(i, p) {
+    $.each(report.participants, function(i, p) {
         $("#participants").append(addName(p, true));
         $("#participants").append(" ");
+    });
+    if (report.absentees.length > 0) 
+        $("#absentees-header").css("visibility","visible");
+
+    $.each(report.absentees, function(i, p) {
+        $("#absentees").append(addName(p, false, p.reason));
+        $("#absentees").append(" ");
     });
 }
 
 function updateAgendas() {
-    agendas = [];
     $("#agendas").empty();
     $("#agenda-list").empty();
 
-    $.ajax({
-        url: server + "agendas",
-        crossDomain: true,
-        type: "GET",
-        data: {eventID: currentEvent._id},
-        success: function(data) {
-            $.each(data.agendas, function(i, agenda) {
-                agendas.push(agenda);
-                $("#agendas").append(agendaForm(agenda));
-                $("#agenda-list").append("<li id=agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
-            });
+    $.each(report.agendas, function(i, agenda) {
+        $("#agendas").append(agendaForm(agenda));
+        $("#agenda-list").append("<li id=agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
+    });
 
-            $("#agendas").append("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
-            $("#add-new-agenda").click(function () {
-                $("#agendas").append(newAgendaForm());
-                $("#add-new-agenda").remove();
-            });
-        }
+    $("#agendas").append("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
+    $("#add-new-agenda").click(function () {
+        $("#agendas").append(newAgendaForm());
+        $("#add-new-agenda").remove();
     });
 }
 
 function updatePrevAgendas() {
-	prevEvents = [];
     $("#prev-agendas").empty();
     $("#prev-agenda-list").empty();
-	
-    if (!currentEvent.prevEvents) return;
-
-    $.each(currentEvent.prevEvents, function(i,eid) {
-        $.ajax({
-            url: server + "next-agendas",
-            crossDomain: true,
-            type: "GET",
-            data: {eventID: eid},
-            success: function(data) {
-				var listClass = "prev-agenda-" + data.event._id;
-                $("#prev-agendas").append("<div class='" + listClass + "'></div>");
-                $("#prev-agendas " + listClass).append(
-                    "<h4>[" + data.event._id + "] " + data.event.name + "</h4>");
-                $("#prev-agenda-list").append(
-                    "<h4>[" + data.event._id + "] " + data.event.name + "</h4>");
-                $("#prev-agenda-list").append("<ul class='" + listClass + "'></ul>");
-                listClass = "." + listClass;
-                $.each(data.agendas, function(i, agenda) {
-                    $("#prev-agendas " + listClass).append(prevAgendaForm(agenda));
-                    $("#prev-agenda-list " + listClass).append("<li id=prev-agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
-                });
-            }
+    
+    $.each(report.prevEvents, function(i, prevEvent) {
+        var listID = "prev-agenda-" + prevEvent._id;
+        $("#prev-agendas").append("<div id='" + listID + "'></div>");
+        $("#prev-agendas #" + listID).append(
+            "<h4>[" + prevEvent._id + "] " + prevEvent.name + "</h4>");
+        $("#prev-agenda-list").append(
+            "<h4>[" + prevEvent._id + "] " + prevEvent.name + "</h4>");
+        $("#prev-agenda-list").append("<ul class='" + listID + "'></ul>");
+        $.each(prevEvent.agendas, function(i, agenda) {
+            $("#prev-agendas #" + listID).append(prevAgendaForm(agenda));
+            $("#prev-agenda-list ." + listID).append("<li id=prev-agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
         });
     });
 }
@@ -233,48 +216,45 @@ function updatePrevAgendas() {
 function updateNextEvent() {
     if (!(eventID = currentEvent._id))
         return;
+    if (report.nextEvent === "")
+        return;
+
     $("#next-agendas").empty();
-    $.ajax({
-        url: server + "next-agendas",
-        crossDomain: true,
-        type: "GET",
-        data: {eventID: eventID},
-        success: function(data) {
-            $("#existing-event").prop("checked", true);
-            var datetime = data.event.time;
-            $("#date-next-event").val(
-                datetime.substring(0,10));
-            $("#time-next-event").val(
-                datetime.substring(11,16));
-            $("#time-next-event").prop("disabled", true);
-            $("#name-next-event").replaceWith(
-                "<input type='text' class='form-control' id='name-next-event' value='[" +
-				datetime + "] " + data.event.name + "' />");
-            $("#name-next-event").prop("disabled", true);
-            applyDepartmentSelection(data.event.department);
-            $("#departments-next-event input").prop("disabled", true);
-            $.each(data.agendas, function(i, agenda) {
-                $("#next-agendas").append(nextAgendaForm(agenda));
-            });
-        }
+    
+    $("#existing-event").prop("checked", true);
+    var datetime = report.nextEvent.time;
+    $("#date-next-event").val(
+        datetime.substring(0,10));
+    $("#time-next-event").val(
+        datetime.substring(11,16));
+    $("#time-next-event").prop("disabled", true);
+    $("#name-next-event").replaceWith(
+        "<input type='text' class='form-control' id='name-next-event' value='[" +
+        datetime + "] " + report.nextEvent.name + "' />");
+    $("#name-next-event").prop("disabled", true);
+    applyDepartmentSelection(report.nextEvent.department);
+    $("#departments-next-event input").prop("disabled", true);
+    $.each(report.nextEvent.agendas, function(i, agenda) {
+        $("#next-agendas").append(nextAgendaForm(agenda));
     });
+        
 }
 
 function presentDelete() {
     var id = $(this).parent().attr('id').substring(2);
     id = Number(id);
     $(this).parent().remove();
-    var idx = indexOf(participants, function (p) {
+    var idx = indexOf(report.participants, function (p) {
         return p._id === id;
     });
     if (idx < 0) return;
-    var p = participants[idx];
-	p.reason = "";
-    absentees.push(p);
+    var p = report.participants[idx];
+    p.reason = "";
+    report.absentees.push(p);
     $("#absentees-header").css("visibility","visible");
     $("#absentees").append(addName(p, false));
     $("#absentees").append(" ");
-    participants.splice(idx, 1);
+    report.participants.splice(idx, 1);
 }
 
 
@@ -282,13 +262,13 @@ function absentDelete() {
     var id = $(this).parent().attr('id').substring(3);
     id = Number(id);
     $(this).parent().remove();
-    var idx = indexOf(absentees, function (p) {
+    var idx = indexOf(report.absentees, function (p) {
         return p._id === id;
     });
-	dropouts.push(absentees[idx]);
+    report.dropouts.push(absentees[idx]);
     if (idx < 0) return;
-    absentees.splice(idx, 1);
-    if (absentees.length < 1) {
+    report.absentees.splice(idx, 1);
+    if (report.absentees.length < 1) {
         $("#absentees-header").css("visibility","hidden");
     }
 }
@@ -297,16 +277,16 @@ function absentRestore() {
     var id = $(this).parent().attr('id').substring(2);
     id = Number(id);
     $(this).parent().remove();
-    var idx = indexOf(absentees, function (p) {
+    var idx = indexOf(report.absentees, function (p) {
         return p._id === id;
     });
     if (idx < 0) return;
-    var p = absentees[idx];
-    participants.push(p);
+    var p = report.absentees[idx];
+    report.participants.push(p);
     $("#participants").append(addName(p, true));
     $("#participants").append(" ");
-    absentees.splice(idx, 1);
-    if (absentees.length < 1) {
+    report.absentees.splice(idx, 1);
+    if (report.absentees.length < 1) {
         $("#absentees-header").css("visibility","hidden");
     }
 }
@@ -318,7 +298,7 @@ function indexOf(arr, f) {
     return -1;
 }
 
-function addName(person, isPresent) {
+function addName(person, isPresent, reason) {
     var $nameTag = $("<span class='label person'></span>");
     $nameTag.attr("id", "P-" + person._id);
     $nameTag.append("[" + person._id + "] " + person.name);
@@ -341,7 +321,8 @@ function addName(person, isPresent) {
         $restoreButton.click(absentRestore);
         $nameTag.append($restoreButton);
 
-        var $absentReason = $("<span class='badge reason'>사유</span>");
+        if (reason === undefined || reason === "") reason = "사유";
+        var $absentReason = $("<span class='badge reason'>" + reason + "</span>");
         $absentReason.click( function() { modifyReason($(this)); });
         $(".glyphicon-remove", $nameTag).before($absentReason);
         $(".glyphicon-remove", $nameTag).before(" ");
@@ -354,7 +335,7 @@ function modifyReason($element) {
     if (reason === "사유") reason = "";
     $element.replaceWith("<input type='text' class='reason-text' value=" + reason + "></input>");
     $(".reason-text").focusout(function () {
-        comfirmReason($(this));
+        confirmReason($(this));
     });
     $(".reason-text").keydown(function (event) {
         if (event.which === 13) comfirmReason($(this));
@@ -362,16 +343,16 @@ function modifyReason($element) {
     $(".reason-text").focus();
 }
 
-function comfirmReason($element) {
+function confirmReason($element) {
     var reason = $element.val();
-	var id = $element.parent().attr('id').substring(2);
+    var id = $element.parent().attr('id').substring(2);
     id = Number(id);
-    $.each(absentees, function (i, p) {
+    $.each(report.absentees, function (i, p) {
         if (p._id === id) {
-			p.reason = reason;
-		}
+            report.absentees[i].reason = reason
+        }
     });
-	
+
     if (reason === "") reason = "사유";
     $element.replaceWith("<span class='badge reason'>" + reason + "</span>");
     $(".reason").click(function () {
@@ -443,11 +424,21 @@ function agendaForm(agenda) {
     var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>");
     $deleteBtn.click( function(event) {
         event.preventDefault();
-        agendaID = $(this).parent().parent().attr('id').substring(7);
-        removeAgenda(agendaID, currentEvent._id);
+        removeAgenda(agenda._id, currentEvent._id);
     });
     $(".form-group", $agendaForm).append($deleteBtn);
-    $agendaForm.append("<div class='form-group'><label>Description</label><textarea class='form-control' rows='5'></textarea></div>");
+    var $description = $("<div class='form-group'><label>Description</label><textarea class='form-control' rows='5'></textarea></div>");
+    $($description).find("textarea").val(agenda.description);
+    $($description).find("textarea").change( function() {}
+        var agendaID = agenda._id;
+        var text = $(this).val();
+        $.each(report.agendas, function(i, agenda) {
+            if (agenda._id === agendaID) {
+                report.agendas[i].description = text;
+            }
+        });
+    });
+    $agendaForm.append($description);
     return $agendaForm;
 }
 
@@ -455,7 +446,23 @@ function agendaForm(agenda) {
 function prevAgendaForm(agenda) {
     var $agendaForm = $("<form id='prev-agenda-" + agenda._id + "'></form>");
     $agendaForm.append("<div class='form-group'><label>&lt;Agenda " + agenda._id + "&gt; " + agenda.name + "</label></div>");
-    $agendaForm.append("<div class='form-group'><label>Description</label><textarea class='form-control' rows='5'></textarea></div>");
+    var $description = $("<div class='form-group'><label>Description</label><textarea class='form-control' rows='5'></textarea></div>");
+    $($description).find("textarea").val(agenda.description);
+    $($description).find("textarea").change( function() {
+        var eventID = $(this).parent().parent().parent().attr('id').substring(12);
+        var agendaID = agenda._id;
+        var text = $(this).val();
+        $.each(report.prevEvents, function(i, prevEvent) {
+            if (prevEvent._id === eventID) {
+                $.each(report.prevEvents[i].agendas, function(j, agenda) {
+                    if (agenda._id === agendaID) {
+                        report.prevEvents[i].agendas[j].description = text;
+                    }
+                });
+            }
+        });
+    });
+    $agendaForm.append($description);
     return $agendaForm;
 }
 
@@ -464,7 +471,7 @@ function departmentSelectForm(depts) {
     $.each(depts, function(i,e) {
         $departments.append("<label class='checkbox-inline'>" +
             "<input type='checkbox' value='" + e._id + "'>" +
-			e.name + "</label>");
+            e.name + "</label>");
     });
     return $departments;
 }
@@ -628,3 +635,14 @@ function uploadNextEvent() {
     }
 }
 
+$("#save-report").click(function() {
+    $.ajax({
+            url: server + "report/" + currentEvent._id,
+            type: "PUT",
+            crossDomain: true,
+            data: {"report": JSON.stringify(report)},
+            success: function(data) {
+                alert("Saved");
+            }
+        });
+});

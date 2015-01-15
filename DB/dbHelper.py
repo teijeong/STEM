@@ -109,7 +109,7 @@ def insertPerson(name, department):
         department = [department]
     cur = db.people.find().sort('_id', pymongo.DESCENDING).limit(1)
     personID = 0
-    if cur.count() > 0:    
+    if cur.count() > 0:
         personID = cur[0]['_id'] + 1
     person = {'_id': personID, 'name': name, 'department': department}
     return db.people.insert(person)
@@ -132,7 +132,7 @@ def insertAgenda(name, eventID):
     agenda = {'_id': agendaID, 'name': name}
     db.agendas.insert(agenda)
 
-    cur = db.events.update({'_id': eventID}, 
+    cur = db.events.update({'_id': eventID},
         {'$addToSet': {'agendas': agendaID}})
     return agenda
 
@@ -156,26 +156,28 @@ def deleteNextAgenda(agendaID, eventID):
     return db.events.update({'_id': eventID}, {'$pull': {'nextAgendas': agendaID}})
 
 def createReport(eventID):
+    cur = db.reports.find({'_id': eventID})
+    if cur.count() != 0:
+        return generateReport(eventID)
+
     cur = db.events.find({'_id': eventID})
     if cur.count() == 0:
         return None
-	
-	cur = db.events.find({'_id': eventID})
-	if cur.count() != 0:
-		return generateReport(eventID)
-	
+
     report = cur[0]
+    report['time'] = str(report['time'])
     report['participants'] = []
     for person in getPeople(report['department']):
-        report['participants'].append({'_id': person['_id'], 'name': person['name']})    
+        report['participants'].append({'_id': person['_id'], 'name': person['name']})
     report['absentees'] = []
     report['dropouts']=[]
 
     prevEvents = []
     try:
-        for eventID in report['prevEvents']:
-            prevEvent = {'_id': eventID, 'agendas': []}
-            _, agendas = getNextAgendas(eventID)
+        for prevEventID in report['prevEvents']:
+            prevEvent = getEvent(prevEventID)
+            prevEvent = {'_id': prevEventID, 'name': prevEvent['name'], 'agendas': []}
+            _, agendas = getNextAgendas(prevEventID)
             for agenda in agendas:
                 agenda['description'] = ''
                 prevEvent['agendas'].append(agenda)
@@ -190,14 +192,18 @@ def createReport(eventID):
         report['agendas'].append(agenda)
 
     try:
-        report['nextEvent'] = {'_id': report['nextEvent'], 'agendas': []}
+        nextEvent = getEvent(report['nextEvent'])
+        nextEvent['time'] = str(nextEvent['time'])
+        report['nextEvent'] = {'_id': report['nextEvent'], 'agendas': [],
+            'name': nextEvent['name'], 'time': nextEvent['time'],
+            'department': nextEvent['department']}
         _, agendas = getNextAgendas(eventID)
         for agenda in agendas:
             agenda['description'] = ''
             report['nextEvent']['agendas'].append(agenda)
     except KeyError:
         report['nextEvent'] = ''
-    
+
     db.reports.insert(report)
     return report
 
@@ -223,7 +229,7 @@ def updateReportParticipants(reportID, restoreDropouts = False):
         for p in report['dropouts']:
             if person['_id'] == p['_id']:
                 continue
-        report['participants'].append({'_id': person['_id'], 'name': person['name']})    
+        report['participants'].append({'_id': person['_id'], 'name': person['name']})
 
     db.reports.update({'_id': reportID}, report)
     return report
@@ -247,7 +253,7 @@ def updateReportPrevAgenda(reportID, prevEventID, agendaID, description):
 
     if idx >= len(report['prevEvents']):
         return None
-    
+
     idx2 = 0
     for agenda in report['prevEvents'][idx]['agendas']:
         if agenda['_id'] == agendaID:
@@ -255,7 +261,7 @@ def updateReportPrevAgenda(reportID, prevEventID, agendaID, description):
         idx2 += 1
 
     agenda = 'prevEvents.' + str(idx) + '.agendas.' + str(idx2) + '.description'
-    
+
     return db.reports.update(
         {'_id': reportID},
         {'$set': {agenda: description}})
@@ -272,59 +278,64 @@ def updateReport(reportID, report):
     return db.reports.update({'_id': reportID}, report)
 
 def generateReport(reportID):
-	cur = db.reports.find({'_id': reportID})
-	if cur.count() == 0:
-		if not createReport(reportID):
-			return None
-	report = db.reports.find({'_id': reportID})[0]
-	
-	event = db.events.find({'_id': reportID})[0]
-	
-	if not 'prevEvents' in event:
-		event['prevEvents'] = []
-	if not 'nextEvent' in event:
-		event['nextEvent'] = ''
-	
-	prevEvents = []
-	
-	for prevEventID in event['prevEvents']:
-		_, agendas = getNextAgendas(prevEventID)
-		prevEvents.append({'_id': prevEventID, 'agendas': agendas})
-		for oldPrevEvent in report['prevEvents']:
-			if oldPrevEvent['_id'] == prevEventID:
-				for i in range(len(agendas)):
-					for oldAgenda in oldPrevEvent['agendas']:
-						if agendas[i]['_id'] == oldAgenda['_id']:
-							prevEvents[-1]['agendas'][i]['description'] = oldAgenda['description']
-	
-	report['prevEvents'] = prevEvents
-	
-	agendas = getAgendas(reportID)
-	
-	for i in range(len(agendas)):
-		for oldAgenda in report['agendas']:
-			if agendas[i]['_id'] == oldAgenda['_id']:
-				agendas[i]['description'] = oldAgenda['description']
-	
-	report['agendas'] = agendas
+    cur = db.reports.find({'_id': reportID})
+    if cur.count() == 0:
+        if not createReport(reportID):
+            return None
+    report = db.reports.find({'_id': reportID})[0]
 
-	_, agendas = getNextAgendas(reportID)
-	
-	if report['nextEvent']['_id'] == event['nextEvent']:
-		for i in range(len(agendas)):
-			for oldAgenda in report['nextEvent']['agendas']:
-				if agendas[i]['_id'] == oldAgenda['_id']:
-					agendas[i]['description'] = oldAgenda['description']
-	else:
-		report['nextEvent']['id'] = event['nextEvent']
-	
-	report['nextEvent']['agendas'] = agendas
+    event = db.events.find({'_id': reportID})[0]
 
-	updateReport(reportID, report)
-	
-	return report
-	
-	
-	
-	
-	
+    if not 'prevEvents' in event:
+        event['prevEvents'] = []
+    if not 'nextEvent' in event:
+        event['nextEvent'] = ''
+
+    prevEvents = []
+
+    for prevEventID in event['prevEvents']:
+        prevEvent, agendas = getNextAgendas(prevEventID)
+        prevEvents.append(
+            {'_id': prevEventID, 'name': prevEvent['name'], 'agendas': agendas})
+        for oldPrevEvent in report['prevEvents']:
+            if oldPrevEvent['_id'] == prevEventID:
+                for i in range(len(agendas)):
+                    for oldAgenda in oldPrevEvent['agendas']:
+                        if agendas[i]['_id'] == oldAgenda['_id']:
+                            prevEvents[-1]['agendas'][i]['description'] = oldAgenda['description']
+
+    report['prevEvents'] = prevEvents
+
+    agendas = getAgendas(reportID)
+
+    for i in range(len(agendas)):
+        for oldAgenda in report['agendas']:
+            if agendas[i]['_id'] == oldAgenda['_id']:
+                agendas[i]['description'] = oldAgenda['description']
+
+    report['agendas'] = agendas
+
+    _, agendas = getNextAgendas(reportID)
+
+    if report['nextEvent']['_id'] == event['nextEvent']:
+        for i in range(len(agendas)):
+            for oldAgenda in report['nextEvent']['agendas']:
+                if agendas[i]['_id'] == oldAgenda['_id']:
+                    agendas[i]['description'] = oldAgenda['description']
+    else:
+        report['nextEvent']['id'] = event['nextEvent']
+        if not event['nextEvent'] == '':
+            nextEvent = getEvent(event['nextEvent'])
+            report['nextEvent'] = {'_id': event['nextEvent'], 'agendas': [],
+                'name': nextEvent['name'], 'time': nextEvent['time'],
+                'department': nextEvent['department']}
+
+    report['nextEvent']['agendas'] = agendas
+
+    updateReport(reportID, report)
+
+    return report
+
+
+
+
