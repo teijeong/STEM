@@ -4,16 +4,21 @@ var events;
 var nextEvents;
 var participants = [];
 var absentees = [];
+var dropouts = [];
 
 var currentEvent;
 var agendas = [];
 
-/*/*/var server = "https://stem-flask.herokuapp.com/"
-//*/var server = "http://localhost:5000/"
+/*/*/var server = "https://stem-flask.herokuapp.com/";
+//*/var server = "http://localhost:5000/";
 
 var eventDates = [];
 var eventMonths = [];
 
+var report;
+
+var prevEvents;
+var nextEvent;
 
 $(document).ready(function() {
     
@@ -80,8 +85,7 @@ function updateEventDates(year, month, fromDatepicker) {
             if (fromDatepicker) $("#dateInput").datepicker("refresh");
             if (fromDatepicker) $("#date-next-event").datepicker("refresh");
         }
-
-    })
+    });
 }
 
 function loadEvents() {
@@ -196,8 +200,10 @@ function updateAgendas() {
 }
 
 function updatePrevAgendas() {
+	prevEvents = [];
     $("#prev-agendas").empty();
     $("#prev-agenda-list").empty();
+	
     if (!currentEvent.prevEvents) return;
 
     $.each(currentEvent.prevEvents, function(i,eid) {
@@ -207,7 +213,7 @@ function updatePrevAgendas() {
             type: "GET",
             data: {eventID: eid},
             success: function(data) {
-                var listClass = "prev-agenda-" + data.event._id;
+				var listClass = "prev-agenda-" + data.event._id;
                 $("#prev-agendas").append("<div class='" + listClass + "'></div>");
                 $("#prev-agendas " + listClass).append(
                     "<h4>[" + data.event._id + "] " + data.event.name + "</h4>");
@@ -242,8 +248,8 @@ function updateNextEvent() {
                 datetime.substring(11,16));
             $("#time-next-event").prop("disabled", true);
             $("#name-next-event").replaceWith(
-                "<input type='text' class='form-control' id='name-next-event' value='["
-                + datetime + "] " + data.event.name + "' />");
+                "<input type='text' class='form-control' id='name-next-event' value='[" +
+				datetime + "] " + data.event.name + "' />");
             $("#name-next-event").prop("disabled", true);
             applyDepartmentSelection(data.event.department);
             $("#departments-next-event input").prop("disabled", true);
@@ -263,6 +269,7 @@ function presentDelete() {
     });
     if (idx < 0) return;
     var p = participants[idx];
+	p.reason = "";
     absentees.push(p);
     $("#absentees-header").css("visibility","visible");
     $("#absentees").append(addName(p, false));
@@ -278,6 +285,7 @@ function absentDelete() {
     var idx = indexOf(absentees, function (p) {
         return p._id === id;
     });
+	dropouts.push(absentees[idx]);
     if (idx < 0) return;
     absentees.splice(idx, 1);
     if (absentees.length < 1) {
@@ -356,6 +364,14 @@ function modifyReason($element) {
 
 function comfirmReason($element) {
     var reason = $element.val();
+	var id = $element.parent().attr('id').substring(2);
+    id = Number(id);
+    $.each(absentees, function (i, p) {
+        if (p._id === id) {
+			p.reason = reason;
+		}
+    });
+	
     if (reason === "") reason = "사유";
     $element.replaceWith("<span class='badge reason'>" + reason + "</span>");
     $(".reason").click(function () {
@@ -424,7 +440,7 @@ function removeAgenda(agendaID, eventID) {
 function agendaForm(agenda) {
     var $agendaForm = $("<form id='agenda-" + agenda._id + "'></form>");
     $agendaForm.append("<div class='form-group'><label>&lt;Agenda " + agenda._id + "&gt; " + agenda.name + "</label></div>");
-    var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>")
+    var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>");
     $deleteBtn.click( function(event) {
         event.preventDefault();
         agendaID = $(this).parent().parent().attr('id').substring(7);
@@ -447,8 +463,8 @@ function departmentSelectForm(depts) {
     var $departments = $("<div></div>");
     $.each(depts, function(i,e) {
         $departments.append("<label class='checkbox-inline'>" +
-            "<input type='checkbox' value='" + e._id + "'>"
-            + e.name + "</label>");
+            "<input type='checkbox' value='" + e._id + "'>" +
+			e.name + "</label>");
     });
     return $departments;
 }
@@ -552,7 +568,7 @@ function removeNextAgenda(agendaID, eventID) {
 function nextAgendaForm(agenda) {
     var $agendaForm = $("<form id='next-agenda-" + agenda._id + "'></form>");
     $agendaForm.append("<div class='form-group'><label>&lt;Agenda " + agenda._id + "&gt; " + agenda.name + "</label></div>");
-    var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>")
+    var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>");
     $deleteBtn.click( function(event) {
         event.preventDefault();
         agendaID = $(this).parent().parent().attr('id').substring(12);
@@ -595,7 +611,7 @@ function uploadNextEvent() {
         });
         if (depts.length > 0) depts = depts.substring(1);
 
-        if (date.length == 0 || name.length == 0 || depts.length == 0) {
+        if (date.length === 0 || name.length === 0 || depts.length === 0) {
             alert("Fill out all the forms");
             return;
         }
