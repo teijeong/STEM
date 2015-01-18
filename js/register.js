@@ -53,7 +53,7 @@ $("#registerEvent").click( function() {
         depts = depts + "," + $(this).val();
     });
     if (depts.length > 0) depts = depts.substring(1);
-    
+
     if (date.length == 0 || name.length == 0 || depts.length == 0) {
         alert("Fill out all the forms");
         return;
@@ -124,7 +124,7 @@ function departmentSelectForm(depts) {
     $departments = $("<div></div>");
     $.each(depts, function(i,e) {
         $departments.append("<label class='checkbox-inline'>" +
-            "<input type='checkbox' value='" + e._id + "'>" 
+            "<input type='checkbox' value='" + e._id + "'>"
             + e.name + "</label>");
     });
     return $departments;

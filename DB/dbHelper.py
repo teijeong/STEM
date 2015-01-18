@@ -337,8 +337,8 @@ def generateReport(reportID):
         for oldPrevEvent in report['prevEvents']:
             if oldPrevEvent['_id'] == prevEventID:
                 for i in range(len(agendas)):
+                    prevEvents[-1]['agendas'][i]['description'] = ''
                     for oldAgenda in oldPrevEvent['agendas']:
-                        prevEvents[-1]['agendas'][i]['description'] = ''
                         if agendas[i]['_id'] == oldAgenda['_id']:
                             prevEvents[-1]['agendas'][i]['description'] = oldAgenda['description']
 
@@ -346,16 +346,12 @@ def generateReport(reportID):
 
     agendas = getAgendas(reportID)
 
-    print agendas
-    print report['agendas']
-    
+
     for i in range(len(agendas)):
+        agendas[i]['description'] = ''
         for oldAgenda in report['agendas']:
-            agendas[i]['description'] = ''
             if agendas[i]['_id'] == oldAgenda['_id']:
                 agendas[i]['description'] = oldAgenda['description']
-
-    print agendas
 
     report['agendas'] = agendas
 
@@ -364,8 +360,8 @@ def generateReport(reportID):
     if not report['nextEvent']['_id'] == '':
         if report['nextEvent']['_id'] == event['nextEvent']:
             for i in range(len(agendas)):
+                agendas[i]['description'] = ''
                 for oldAgenda in report['nextEvent']['agendas']:
-                    agendas[i]['description'] = ''
                     if agendas[i]['_id'] == oldAgenda['_id']:
                         agendas[i]['description'] = oldAgenda['description']
         else:

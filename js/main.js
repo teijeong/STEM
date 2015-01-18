@@ -21,7 +21,7 @@ var prevEvents;
 var nextEvent;
 
 $(document).ready(function() {
-    
+
     var date = new Date();
 
     $("#dateInput").change(loadEvents);
@@ -187,7 +187,7 @@ function updatePeople() {
         $("#participants").append(addName(p, true));
         $("#participants").append(" ");
     });
-    if (report.absentees.length > 0) 
+    if (report.absentees.length > 0)
         $("#absentees-header").css("visibility","visible");
 
     $.each(report.absentees, function(i, p) {
@@ -215,7 +215,7 @@ function updateAgendas() {
 function updatePrevAgendas() {
     $("#prev-agendas").empty();
     $("#prev-agenda-list").empty();
-    
+
     $.each(report.prevEvents, function(i, prevEvent) {
         var listID = "prev-agenda-" + prevEvent._id;
         $("#prev-agendas").append("<div id='" + listID + "'></div>");
@@ -238,7 +238,7 @@ function updateNextEvent() {
         return;
 
     $("#next-agendas").empty();
-    
+
     $("#existing-event").prop("checked", true);
     var datetime = report.nextEvent.time;
     $("#date-next-event").val(
@@ -254,7 +254,7 @@ function updateNextEvent() {
     $("#departments-next-event input").prop("disabled", true);
     $.each(report.nextEvent.agendas, function(i, agenda) {
         $("#next-agendas").append(nextAgendaForm(agenda));
-    }); 
+    });
 }
 
 function presentDelete() {
@@ -318,7 +318,7 @@ function indexOf(arr, f) {
 function addName(person, isPresent, reason) {
     var $nameTag = $("<span class='label person'></span>");
     $nameTag.attr("id", "P-" + person._id);
-    $nameTag.append("[" + person._id + "] " + person.name);
+    $nameTag.append(person.name);
     var $deleteButton = $("<span class='glyphicon glyphicon-remove'></span>");
     if (isPresent) {
         $nameTag.addClass("label-primary");
@@ -333,7 +333,7 @@ function addName(person, isPresent, reason) {
     $nameTag.append($deleteButton);
     if (!isPresent) {
         $nameTag.append(" ");
- 
+
         var $restoreButton = $("<span class='glyphicon glyphicon-upload absent-restore'></span>");
         $restoreButton.click(absentRestore);
         $nameTag.append($restoreButton);
@@ -393,9 +393,9 @@ function newAgendaForm() {
     $input.append(" ");
     $input.append($btn);
     $agendaForm.append($input);
-    $agendaForm.submit( function(event) { 
+    $agendaForm.submit( function(event) {
         event.preventDefault();
-        
+
         if (selectedAgenda && $("#new-agenda-name").val() === selectedAgenda.value) {
             var i = 0;
             for (i = 0; i < report.agendas.length; i++) {
@@ -408,7 +408,7 @@ function newAgendaForm() {
                 registerExistingAgenda(selectedAgenda.id, currentEvent._id);
         }
         else
-            registerAgenda($("#new-agenda-name").val(), currentEvent._id); 
+            registerAgenda($("#new-agenda-name").val(), currentEvent._id);
     });
 
     return $agendaForm;
@@ -432,7 +432,7 @@ function registerAgenda(name, eventID) {
             var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
             $btn.click(function () {
                 $("#agendas").append(newAgendaForm());
-               
+
                 $("#add-new-agenda").remove();
             });
             $("#agendas").append($btn);
