@@ -71,7 +71,9 @@ def getNextAgendas(eventID):
 def getEvent(eventID):
     cur = db.events.find({'_id': eventID})
     if cur.count() > 0:
-        return cur[0]
+        event = cur[0]
+        event['time'] = str(event['time'])
+        return event
     return None
 
 def insertEvent(time, name, department):
@@ -91,9 +93,21 @@ def insertEvent(time, name, department):
 
 def updateNextEvent(eventID, nextEventID):
     cur = db.events.find({'_id':eventID})
+
+    if cur.count() == 0:
+        return None
+
+    if nextEventID is None:
+        try:
+            cur = db.events.update({'_id':cur[0]['nextEvent']}, {'$pull': {'prevEvents': eventID}})
+        except KeyError:
+            pass
+        cur = db.events.update({'_id': eventID}, {'$set': {'nextEvent': ''}})
+        return eventID
+
     cur2 = db.events.find({'_id':nextEventID})
 
-    if cur.count() == 0 or cur2.count == 0:
+    if cur2.count == 0:
         return None
     try:
         cur = db.events.update({'_id':cur[0]['nextEvent']}, {'$pull': {'prevEvents': eventID}})
@@ -136,6 +150,17 @@ def insertAgenda(name, eventID):
         {'$addToSet': {'agendas': agendaID}})
     return agenda
 
+def insertExistingAgenda(agendaID, eventID):
+    cur = db.agendas.find({'_id': agendaID})
+    if cur.count() == 0:
+        return None
+
+    agenda = cur[0]
+
+    cur = db.events.update({'_id': eventID},
+        {'$addToSet': {'agendas': agendaID}})
+    return agenda
+
 def deleteAgenda(agendaID, eventID):
     return db.events.update({'_id': eventID}, {'$pull': {'agendas': agendaID}})
 
@@ -151,6 +176,18 @@ def insertNextAgenda(name, eventID):
     cur = db.events.update({'_id': eventID},
         {'$addToSet': {'nextAgendas': agendaID}})
     return agenda
+
+def insertExistingNextAgenda(agendaID, eventID):
+    cur = db.agendas.find({'_id': agendaID})
+    if cur.count() == 0:
+        return None
+
+    agenda = cur[0]
+
+    cur = db.events.update({'_id': eventID},
+        {'$addToSet': {'nextAgendas': agendaID}})
+    return agenda
+
 
 def deleteNextAgenda(agendaID, eventID):
     return db.events.update({'_id': eventID}, {'$pull': {'nextAgendas': agendaID}})
@@ -202,7 +239,7 @@ def createReport(eventID):
             agenda['description'] = ''
             report['nextEvent']['agendas'].append(agenda)
     except KeyError:
-        report['nextEvent'] = ''
+        report['nextEvent'] = {'_id': ''}
 
     db.reports.insert(report)
     return report
@@ -301,6 +338,7 @@ def generateReport(reportID):
             if oldPrevEvent['_id'] == prevEventID:
                 for i in range(len(agendas)):
                     for oldAgenda in oldPrevEvent['agendas']:
+                        prevEvents[-1]['agendas'][i]['description'] = ''
                         if agendas[i]['_id'] == oldAgenda['_id']:
                             prevEvents[-1]['agendas'][i]['description'] = oldAgenda['description']
 
@@ -308,27 +346,35 @@ def generateReport(reportID):
 
     agendas = getAgendas(reportID)
 
+    print agendas
+    print report['agendas']
+    
     for i in range(len(agendas)):
         for oldAgenda in report['agendas']:
+            agendas[i]['description'] = ''
             if agendas[i]['_id'] == oldAgenda['_id']:
                 agendas[i]['description'] = oldAgenda['description']
+
+    print agendas
 
     report['agendas'] = agendas
 
     _, agendas = getNextAgendas(reportID)
 
-    if report['nextEvent']['_id'] == event['nextEvent']:
-        for i in range(len(agendas)):
-            for oldAgenda in report['nextEvent']['agendas']:
-                if agendas[i]['_id'] == oldAgenda['_id']:
-                    agendas[i]['description'] = oldAgenda['description']
-    else:
-        report['nextEvent']['id'] = event['nextEvent']
-        if not event['nextEvent'] == '':
-            nextEvent = getEvent(event['nextEvent'])
-            report['nextEvent'] = {'_id': event['nextEvent'], 'agendas': [],
-                'name': nextEvent['name'], 'time': nextEvent['time'],
-                'department': nextEvent['department']}
+    if not report['nextEvent']['_id'] == '':
+        if report['nextEvent']['_id'] == event['nextEvent']:
+            for i in range(len(agendas)):
+                for oldAgenda in report['nextEvent']['agendas']:
+                    agendas[i]['description'] = ''
+                    if agendas[i]['_id'] == oldAgenda['_id']:
+                        agendas[i]['description'] = oldAgenda['description']
+        else:
+            report['nextEvent']['id'] = event['nextEvent']
+            if not event['nextEvent'] == '':
+                nextEvent = getEvent(event['nextEvent'])
+                report['nextEvent'] = {'_id': event['nextEvent'], 'agendas': [],
+                    'name': nextEvent['name'], 'time': nextEvent['time'],
+                    'department': nextEvent['department']}
 
     report['nextEvent']['agendas'] = agendas
 

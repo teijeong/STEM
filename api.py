@@ -67,6 +67,9 @@ class Event(Resource):
             ' ' + args['time'], '%Y-%m-%d %H:%M')
         departments = [int(n) for n in args['departments'].split(',')]
 
+        dbHelper.insertEvent(
+            eventTime, args['name'], departments)
+
         return {'_id': dbHelper.insertEvent(
             eventTime, args['name'], departments)}, 201
 
@@ -76,9 +79,12 @@ class Event(Resource):
         args = idParser.parse_args()
 
         if args['nextEventID'] is None:
-            return {'msg': 'No event ID'}, 204
+            return {'_id': dbHelper.updateNextEvent(eventID, None)}
 
         return {'_id': dbHelper.updateNextEvent(eventID, args['nextEventID'])};
+
+    def get(self, eventID):
+        return dbHelper.getEvent(eventID)
 
 class EventDates(Resource):
 
@@ -152,7 +158,7 @@ class Person(Resource):
 agenda_fields = {
     '_id': fields.Integer,
     'name': fields.String,
-    'description': fields.String
+    'description': fields.String(default = '')
 }
 agendas_fields = {
     'agendas': fields.List(fields.Nested(agenda_fields))
@@ -171,6 +177,12 @@ class Agendas(Resource):
     def get(self):
         args = self.idParser.parse_args()
         return {'agendas': dbHelper.getAgendas(args['eventID'])}
+
+class AgendaList(Resource):
+
+    def get(self):
+        cur = db.agendas.find()
+        return [agenda for agenda in cur]
 
 class Agenda(Resource):
     idParser = reqparse.RequestParser()
@@ -192,6 +204,12 @@ class Agenda(Resource):
         args = self.idParser.parse_args()
 
         return {'result': str(dbHelper.deleteAgenda(agendaID, args['eventID']))}
+
+    @marshal_with(agenda_fields)
+    def put(self, agendaID):
+        args = self.idParser.parse_args()
+
+        return dbHelper.insertExistingAgenda(agendaID, args['eventID'])
 
 class NextAgendas(Resource):
     idParser = reqparse.RequestParser()
@@ -271,6 +289,7 @@ api.add_resource(Agenda, '/agenda', '/agenda/<int:agendaID>')
 api.add_resource(NextAgendas, '/next-agendas')
 api.add_resource(NextAgenda, '/next-agenda', '/next-agenda/<int:agendaID>')
 api.add_resource(Report, '/report/<string:reportID>')
+api.add_resource(AgendaList, '/agenda-list')
 
 if __name__ == '__main__':
     app.debug = True

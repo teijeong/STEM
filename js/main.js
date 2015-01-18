@@ -11,6 +11,10 @@ var currentEvent;
 var eventDates = [];
 var eventMonths = [];
 
+var agendas = [];
+var selectedAgenda;
+var selectedNextAgenda;
+
 var report;
 
 var prevEvents;
@@ -22,7 +26,10 @@ $(document).ready(function() {
 
     $("#dateInput").change(loadEvents);
     $("#events").change(updateEvent);
-    $("#date-next-event").change(loadNextEvents);
+    $("#date-next-event").change(function () {
+        if ($("#existing-event:checked").length === 1)
+            loadNextEvents();
+    });
     $("#save-next-event").click(uploadNextEvent);
 
     $("#dateInput").datepicker({
@@ -57,6 +64,17 @@ $(document).ready(function() {
             $("#departments-next-event").append(departmentSelectForm(data.departments));
         }
     });
+
+    $.ajax({
+        url: server + "agenda-list",
+        type: "GET",
+        crossDomain: true,
+        success: function(agendaList) {
+            $.each(agendaList, function(i, agenda) {
+                agendas.push({label: agenda.name, value: agenda.name, id: agenda._id});
+            });
+        }
+    })
 
     $("#time-next-event").timepicker({
         stepMinute: 5
@@ -216,7 +234,7 @@ function updatePrevAgendas() {
 function updateNextEvent() {
     if (!(eventID = currentEvent._id))
         return;
-    if (report.nextEvent === "")
+    if (report.nextEvent._id === "")
         return;
 
     $("#next-agendas").empty();
@@ -236,8 +254,7 @@ function updateNextEvent() {
     $("#departments-next-event input").prop("disabled", true);
     $.each(report.nextEvent.agendas, function(i, agenda) {
         $("#next-agendas").append(nextAgendaForm(agenda));
-    });
-        
+    }); 
 }
 
 function presentDelete() {
@@ -365,14 +382,35 @@ function newAgendaForm() {
     var $agendaForm = $("<form id='form-new-agenda' class='form-inline'></form>");
     var $input = $("<div class='form-group'></div>");
     $input.append("<input type='text' id='new-agenda-name'></input>");
+    $input.find("input").autocomplete({
+        source: agendas,
+        select: function(event, ui) {
+            $("#new-agenda-name").val(ui.item.label);
+            selectedAgenda = ui.item;
+        }
+    });
     var $btn = $("<button class='btn btn-default' type='submit' id='add-agenda'>Add</button>");
     $input.append(" ");
     $input.append($btn);
     $agendaForm.append($input);
     $agendaForm.submit( function(event) { 
         event.preventDefault();
-        registerAgenda($("#new-agenda-name").val(), currentEvent._id); 
+        
+        if (selectedAgenda && $("#new-agenda-name").val() === selectedAgenda.value) {
+            var i = 0;
+            for (i = 0; i < report.agendas.length; i++) {
+                if (report.agendas[i]._id === selectedAgenda.id) {
+                    alert("Agenda already exists.");
+                    break;
+                }
+            }
+            if (i === report.agendas.length)
+                registerExistingAgenda(selectedAgenda.id, currentEvent._id);
+        }
+        else
+            registerAgenda($("#new-agenda-name").val(), currentEvent._id); 
     });
+
     return $agendaForm;
 }
 
@@ -390,6 +428,34 @@ function registerAgenda(name, eventID) {
             $("#form-new-agenda").remove();
             $("#agendas").append(agendaForm(result));
             $("#agenda-list").append("<li id=agenda-list-item-" + result._id + ">" + result.name + "</li>");
+            report.agendas.push(result);
+            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
+            $btn.click(function () {
+                $("#agendas").append(newAgendaForm());
+               
+                $("#add-new-agenda").remove();
+            });
+            $("#agendas").append($btn);
+        }
+    });
+}
+
+
+
+
+function registerExistingAgenda(agendaID, eventID) {
+    $.ajax({
+        url: server + "agenda/" + agendaID,
+        crossDomain: true,
+        type: "PUT",
+        data: {
+            eventID: eventID
+        },
+        success: function (result) {
+            $("#form-new-agenda").remove();
+            $("#agendas").append(agendaForm(result));
+            $("#agenda-list").append("<li id=agenda-list-item-" + result._id + ">" + result.name + "</li>");
+            report.agendas.push(result);
             var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
             $btn.click(function () {
                 $("#agendas").append(newAgendaForm());
@@ -411,6 +477,12 @@ function removeAgenda(agendaID, eventID) {
         success: function (data) {
             var formID = "#agenda-" + agendaID;
             var listID = "#agenda-list-item-" + agendaID;
+            $.each(report.agendas, function(i, agenda) {
+                if (agenda._id === agendaID) {
+                    report.agendas.splice(i);
+                    return false;
+                }
+            });
             $(formID).remove();
             $(listID).remove();
         }
@@ -429,7 +501,7 @@ function agendaForm(agenda) {
     $(".form-group", $agendaForm).append($deleteBtn);
     var $description = $("<div class='form-group'><label>Description</label><textarea class='form-control' rows='5'></textarea></div>");
     $($description).find("textarea").val(agenda.description);
-    $($description).find("textarea").change( function() {}
+    $($description).find("textarea").change( function() {
         var agendaID = agenda._id;
         var text = $(this).val();
         $.each(report.agendas, function(i, agenda) {
@@ -488,6 +560,8 @@ function applyDepartmentSelection(depts) {
 
 $("#existing-event").change( function () {
     if ($("#existing-event:checked").length === 1) {
+        $("#date-next-event").val("");
+        $("#time-next-event").val("");
         $("#time-next-event").prop("disabled", true);
         $("#name-next-event").replaceWith("<select class='form-control' id='name-next-event'></select>");
         $("#departments-next-event input").prop("disabled", true);
@@ -521,16 +595,43 @@ function newNextAgendaForm() {
     var $agendaForm = $("<form id='form-new-next-agenda' class='form-inline'></form>");
     var $input = $("<div class='form-group'></div>");
     $input.append("<input type='text' id='new-next-agenda-name'></input>");
+    $input.find("input").autocomplete({
+        source: agendas,
+        select: function(event, ui) {
+            $("new-next-agenda-name").val(ui.item.label);
+            selectedNextAgenda = ui.item;
+        }
+    });
+    $("#new-next-agenda-name").autocomplete({
+        source: agendas,
+        select: function(event, ui) {
+            $("new-next-agenda-name").val(ui.item.label);
+            selectedNextAgenda = ui.item;
+        }
+    });
     var $btn = $("<button class='btn btn-default' type='submit' id='add-next-agenda'>Add</button>");
     $input.append(" ");
     $input.append($btn);
     $agendaForm.append($input);
     $agendaForm.submit( function(event) {
         event.preventDefault();
-        registerNextAgenda($("#new-next-agenda-name").val(), currentEvent._id);
+        if (selectedNextAgenda && $("#new-next-agenda-name").val() === selectedNextAgenda.value) {
+            var i = 0;
+            for (i = 0; i < report.nextEvent.agendas.length; i++) {
+                if (report.nextEvent.agendas[i]._id === selectedNextAgenda.id) {
+                    alert("Agenda already exists.");
+                    break;
+                }
+            }
+            if (i === report.nextEvent.agendas.length)
+                registerNextExistingAgenda(selectedNextAgenda.id, currentEvent._id);
+        }
+        else
+            registerNextAgenda($("#new-next-agenda-name").val(), currentEvent._id);
     });
     return $agendaForm;
 }
+
 
 //Register new agenda and update layout
 function registerNextAgenda(name, eventID) {
@@ -545,10 +646,34 @@ function registerNextAgenda(name, eventID) {
         success: function (result) {
             $("#form-new-next-agenda").remove();
             $("#next-agendas").append(nextAgendaForm(result));
+            report.nextEvent.agendas.push(result);
             var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-next-agenda'>Add Agenda</button>");
             $btn.click(function () {
                 $("#add-new-next-agenda").remove();
                 $("#next-agendas").append(newNextAgendaForm());
+            });
+            $("#next-agendas").append($btn);
+        }
+    });
+}
+
+function registerNextExistingAgenda(agendaID, eventID) {
+    $.ajax({
+        url: server + "next-agenda/" + agendaID,
+        crossDomain: true,
+        type: "PUT",
+        data: {
+            eventID: eventID
+        },
+        success: function (result) {
+            $("#form-new-next-agenda").remove();
+            $("#next-agendas").append(nextAgendaForm(result));
+            $("#next-agenda-list").append("<li id=next-agenda-list-item-" + result._id + ">" + result.name + "</li>");
+            report.nextEvent.agendas.push(result);
+            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-next-agenda'>Add Agenda</button>");
+            $btn.click(function () {
+                $("#next-agendas").append(newNextAgendaForm());
+                $("#add-new-next-agenda").remove();
             });
             $("#next-agendas").append($btn);
         }
@@ -566,7 +691,14 @@ function removeNextAgenda(agendaID, eventID) {
         success: function (data) {
             var formID = "#next-agenda-" + agendaID;
             console.log(formID);
+            $.each(report.nextEvent.agendas, function(i, agenda) {
+                if (agenda._id === agendaID) {
+                    report.nextEvent.agendas.splice(i);
+                    return false;
+                }
+            });
             $(formID).remove();
+
         }
     });
 }
@@ -606,6 +738,7 @@ function uploadNextEvent() {
                 alert(JSON.stringify(data));
             }
         });
+        updateReportNextEvent(nextEventID);
     }
 
     function registerEvent() {
@@ -622,18 +755,58 @@ function uploadNextEvent() {
             alert("Fill out all the forms");
             return;
         }
-
         $.ajax({
             url: server + "event",
             type: "POST",
             crossDomain: true,
             data: {"date": date, "time": time, "name": name, "departments": depts},
             success: function(data) {
-                updateNextEvent(data._id);
+                updateReportNextEvent(data._id);
+            }
+        });
+    }
+
+    function updateReportNextEvent(eventID) {
+        $("#existing-event").prop("checked", true);
+        $("#time-next-event").prop("disabled", true);
+        $("#name-next-event").prop("disabled", true);
+        $("#departments-next-event input").prop("disabled", true);
+        $.ajax({
+            url: server + "event/" + eventID,
+            type: "GET",
+            crossDomain: true,
+            success: function(nextEvent) {
+                var agendas = report.nextEvent.agendas;
+                report.nextEvent = nextEvent;
+                report.nextEvent.agendas = agendas;
+                $("#name-next-event").replaceWith(
+                    "<input type='text' class='form-control' id='name-next-event' value='[" +
+                    report.nextEvent.time + "] " + report.nextEvent.name + "' />");
             }
         });
     }
 }
+
+$("#remove-next-event").click(function() {
+    $.ajax({
+        url: server + "event/" + currentEvent._id,
+        crossDomain: true,
+        type: "PUT",
+        data: {
+            nextEventID: ""
+        },
+        success: function (data) {
+            $("#date-next-event").val("");
+            $("#name-next-event").val("");
+            $("#time-next-event").val("");
+            $("#time-next-event").prop("disabled", false);
+            $("#name-next-event").replaceWith("<input class='form-control' type='text' id='name-next-event' />");
+            $("#departments-next-event input").prop("disabled", false);
+            applyDepartmentSelection(currentEvent.department);
+            alert(JSON.stringify(data));
+        }
+    });
+});
 
 $("#save-report").click(function() {
     $.ajax({
