@@ -67,9 +67,6 @@ class Event(Resource):
             ' ' + args['time'], '%Y-%m-%d %H:%M')
         departments = [int(n) for n in args['departments'].split(',')]
 
-        dbHelper.insertEvent(
-            eventTime, args['name'], departments)
-
         return {'_id': dbHelper.insertEvent(
             eventTime, args['name'], departments)}, 201
 
