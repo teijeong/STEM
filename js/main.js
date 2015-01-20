@@ -74,7 +74,7 @@ $(document).ready(function() {
                 agendas.push({label: agenda.name, value: agenda.name, id: agenda._id});
             });
         }
-    })
+    });
 
     $("#time-next-event").timepicker({
         stepMinute: 5
@@ -234,11 +234,20 @@ function updatePrevAgendas() {
 function updateNextEvent() {
     if (!(eventID = currentEvent._id))
         return;
-    if (report.nextEvent._id === "")
-        return;
-
+    if (report.nextEvent._id === "") {
+    	$("#next-agendas").empty();
+		$("#existing-event").prop("checked", false);
+		$("#date-next-event").val("");
+		$("#time-next-event").val("");
+		$("#name-next-event").val("");
+		$("#date-next-event").prop("disabled", true);
+		$("#time-next-event").prop("disabled", true);
+		$("#name-next-event").prop("disabled", true);
+		applyDepartmentSelection([]);
+		return;
+	}
+        
     $("#next-agendas").empty();
-
     $("#existing-event").prop("checked", true);
     var datetime = report.nextEvent.time;
     $("#date-next-event").val(
