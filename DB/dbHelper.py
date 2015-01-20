@@ -356,11 +356,12 @@ def generateReport(reportID):
     report['agendas'] = agendas
 
     _, agendas = getNextAgendas(reportID)
+    for i in range(len(agendas)):
+	    agendas[i][description] = ''
 
     if not report['nextEvent']['_id'] == '':
         if report['nextEvent']['_id'] == event['nextEvent']:
             for i in range(len(agendas)):
-                agendas[i]['description'] = ''
                 for oldAgenda in report['nextEvent']['agendas']:
                     if agendas[i]['_id'] == oldAgenda['_id']:
                         agendas[i]['description'] = oldAgenda['description']
