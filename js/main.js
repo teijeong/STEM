@@ -364,7 +364,7 @@ function modifyReason($element) {
         confirmReason($(this));
     });
     $(".reason-text").keydown(function (event) {
-        if (event.which === 13) comfirmReason($(this));
+        if (event.which === 13) confirmReason($(this));
     });
     $(".reason-text").focus();
 }
