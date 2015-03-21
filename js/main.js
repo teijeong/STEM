@@ -282,7 +282,7 @@ function absentDelete() {
     var idx = indexOf(report.absentees, function (p) {
         return p._id === id;
     });
-    report.dropouts.push(absentees[idx]);
+    report.dropouts.push(report.absentees[idx]);
     if (idx < 0) return;
     report.absentees.splice(idx, 1);
     if (report.absentees.length < 1) {
