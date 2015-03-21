@@ -74,7 +74,7 @@ $(document).ready(function() {
                 agendas.push({label: agenda.name, value: agenda.name, id: agenda._id});
             });
         }
-    })
+    });
 
     $("#time-next-event").timepicker({
         stepMinute: 5
@@ -205,7 +205,7 @@ function updateAgendas() {
         $("#agenda-list").append("<li id=agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
     });
 
-    $("#agendas").append("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
+    $("#agendas").append("<button class='btn btn-primary btn-submit' id='add-new-agenda'>안건 추가</button>");
     $("#add-new-agenda").click(function () {
         $("#agendas").append(newAgendaForm());
         $("#add-new-agenda").remove();
@@ -234,11 +234,20 @@ function updatePrevAgendas() {
 function updateNextEvent() {
     if (!(eventID = currentEvent._id))
         return;
-    if (report.nextEvent._id === "")
-        return;
-
+    if (report.nextEvent._id === "") {
+    	$("#next-agendas").empty();
+		$("#existing-event").prop("checked", false);
+		$("#date-next-event").val("");
+		$("#time-next-event").val("");
+		$("#name-next-event").val("");
+		$("#date-next-event").prop("disabled", true);
+		$("#time-next-event").prop("disabled", true);
+		$("#name-next-event").prop("disabled", true);
+		applyDepartmentSelection([]);
+		return;
+	}
+        
     $("#next-agendas").empty();
-
     $("#existing-event").prop("checked", true);
     var datetime = report.nextEvent.time;
     $("#date-next-event").val(
@@ -355,7 +364,7 @@ function modifyReason($element) {
         confirmReason($(this));
     });
     $(".reason-text").keydown(function (event) {
-        if (event.which === 13) comfirmReason($(this));
+        if (event.which === 13) confirmReason($(this));
     });
     $(".reason-text").focus();
 }
@@ -366,7 +375,7 @@ function confirmReason($element) {
     id = Number(id);
     $.each(report.absentees, function (i, p) {
         if (p._id === id) {
-            report.absentees[i].reason = reason
+            report.absentees[i].reason = reason;
         }
     });
 
@@ -389,7 +398,7 @@ function newAgendaForm() {
             selectedAgenda = ui.item;
         }
     });
-    var $btn = $("<button class='btn btn-default' type='submit' id='add-agenda'>Add</button>");
+    var $btn = $("<button class='btn btn-default' type='submit' id='add-agenda'>추가</button>");
     $input.append(" ");
     $input.append($btn);
     $agendaForm.append($input);
@@ -400,7 +409,7 @@ function newAgendaForm() {
             var i = 0;
             for (i = 0; i < report.agendas.length; i++) {
                 if (report.agendas[i]._id === selectedAgenda.id) {
-                    alert("Agenda already exists.");
+                    alert("이미 있는 안건입니다.");
                     break;
                 }
             }
@@ -429,7 +438,7 @@ function registerAgenda(name, eventID) {
             $("#agendas").append(agendaForm(result));
             $("#agenda-list").append("<li id=agenda-list-item-" + result._id + ">" + result.name + "</li>");
             report.agendas.push(result);
-            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
+            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-agenda'>안건 추가</button>");
             $btn.click(function () {
                 $("#agendas").append(newAgendaForm());
 
@@ -456,7 +465,7 @@ function registerExistingAgenda(agendaID, eventID) {
             $("#agendas").append(agendaForm(result));
             $("#agenda-list").append("<li id=agenda-list-item-" + result._id + ">" + result.name + "</li>");
             report.agendas.push(result);
-            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-agenda'>Add Agenda</button>");
+            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-agenda'>안건 추가</button>");
             $btn.click(function () {
                 $("#agendas").append(newAgendaForm());
                 $("#add-new-agenda").remove();
@@ -492,14 +501,14 @@ function removeAgenda(agendaID, eventID) {
 //Create agenda form
 function agendaForm(agenda) {
     var $agendaForm = $("<form id='agenda-" + agenda._id + "'></form>");
-    $agendaForm.append("<div class='form-group'><label>&lt;Agenda " + agenda._id + "&gt; " + agenda.name + "</label></div>");
+    $agendaForm.append("<div class='form-group'><label>&lt;안건 " + agenda._id + "&gt; " + agenda.name + "</label></div>");
     var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>");
     $deleteBtn.click( function(event) {
         event.preventDefault();
         removeAgenda(agenda._id, currentEvent._id);
     });
     $(".form-group", $agendaForm).append($deleteBtn);
-    var $description = $("<div class='form-group'><label>Description</label><textarea class='form-control' rows='5'></textarea></div>");
+    var $description = $("<div class='form-group'><label>내용</label><textarea class='form-control' rows='5'></textarea></div>");
     $($description).find("textarea").val(agenda.description);
     $($description).find("textarea").change( function() {
         var agendaID = agenda._id;
@@ -517,8 +526,8 @@ function agendaForm(agenda) {
 //Create agenda form
 function prevAgendaForm(agenda) {
     var $agendaForm = $("<form id='prev-agenda-" + agenda._id + "'></form>");
-    $agendaForm.append("<div class='form-group'><label>&lt;Agenda " + agenda._id + "&gt; " + agenda.name + "</label></div>");
-    var $description = $("<div class='form-group'><label>Description</label><textarea class='form-control' rows='5'></textarea></div>");
+    $agendaForm.append("<div class='form-group'><label>&lt;안건 " + agenda._id + "&gt; " + agenda.name + "</label></div>");
+    var $description = $("<div class='form-group'><label>내용</label><textarea class='form-control' rows='5'></textarea></div>");
     $($description).find("textarea").val(agenda.description);
     $($description).find("textarea").change( function() {
         var eventID = $(this).parent().parent().parent().attr('id').substring(12);
@@ -609,7 +618,7 @@ function newNextAgendaForm() {
             selectedNextAgenda = ui.item;
         }
     });
-    var $btn = $("<button class='btn btn-default' type='submit' id='add-next-agenda'>Add</button>");
+    var $btn = $("<button class='btn btn-default' type='submit' id='add-next-agenda'>추가</button>");
     $input.append(" ");
     $input.append($btn);
     $agendaForm.append($input);
@@ -619,7 +628,7 @@ function newNextAgendaForm() {
             var i = 0;
             for (i = 0; i < report.nextEvent.agendas.length; i++) {
                 if (report.nextEvent.agendas[i]._id === selectedNextAgenda.id) {
-                    alert("Agenda already exists.");
+                    alert("이미 있는 안건입니다.");
                     break;
                 }
             }
@@ -647,7 +656,7 @@ function registerNextAgenda(name, eventID) {
             $("#form-new-next-agenda").remove();
             $("#next-agendas").append(nextAgendaForm(result));
             report.nextEvent.agendas.push(result);
-            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-next-agenda'>Add Agenda</button>");
+            var $btn = $("<button class='btn btn-primary btn-submit' id='add-new-next-agenda'>안건 추가</button>");
             $btn.click(function () {
                 $("#add-new-next-agenda").remove();
                 $("#next-agendas").append(newNextAgendaForm());
@@ -706,7 +715,7 @@ function removeNextAgenda(agendaID, eventID) {
 //Create agenda form
 function nextAgendaForm(agenda) {
     var $agendaForm = $("<form id='next-agenda-" + agenda._id + "'></form>");
-    $agendaForm.append("<div class='form-group'><label>&lt;Agenda " + agenda._id + "&gt; " + agenda.name + "</label></div>");
+    $agendaForm.append("<div class='form-group'><label>&lt;안건 " + agenda._id + "&gt; " + agenda.name + "</label></div>");
     var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>");
     $deleteBtn.click( function(event) {
         event.preventDefault();
@@ -752,7 +761,7 @@ function uploadNextEvent() {
         if (depts.length > 0) depts = depts.substring(1);
 
         if (date.length === 0 || name.length === 0 || depts.length === 0) {
-            alert("Fill out all the forms");
+            alert("모든 내용을 채워주세요.");
             return;
         }
         $.ajax({
@@ -815,7 +824,7 @@ $("#save-report").click(function() {
             crossDomain: true,
             data: {"report": JSON.stringify(report)},
             success: function(data) {
-                alert("Saved");
+                alert("저장되었습니다.");
             }
         });
 });
