@@ -285,7 +285,7 @@ function presentDelete() {
 
 
 function absentDelete() {
-    var id = $(this).parent().attr('id').substring(3);
+    var id = $(this).parent().attr('id').substring(2);
     id = Number(id);
     $(this).parent().remove();
     var idx = indexOf(report.absentees, function (p) {
