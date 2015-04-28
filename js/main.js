@@ -234,7 +234,7 @@ function updatePrevAgendas() {
 function updateNextEvent() {
     if (!(eventID = currentEvent._id))
         return;
-    if (report.nextEvent._id === "") {
+    if (!report.nextEvent._id || report.nextEvent._id === "") {
     	$("#next-agendas").empty();
 		$("#existing-event").prop("checked", false);
 		$("#date-next-event").val("");
