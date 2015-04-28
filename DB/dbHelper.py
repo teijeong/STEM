@@ -359,7 +359,9 @@ def generateReport(reportID):
     for i in range(len(agendas)):
 	    agendas[i]['description'] = ''
 
-    if not report['nextEvent']['_id'] == '':
+    if event['nextEvent'] == '':
+        report['nextEvent'] = ''
+    elif not report['nextEvent']['_id'] == '':
         if report['nextEvent']['_id'] == event['nextEvent']:
             for i in range(len(agendas)):
                 for oldAgenda in report['nextEvent']['agendas']:

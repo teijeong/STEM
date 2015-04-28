@@ -33,3 +33,8 @@ body {
     margin-top: 20px;
     margin-left: 10px;
 }
+
+.editor {
+    min-height: 100px;
+    background-color: #F7F7F9;
+}

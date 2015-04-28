@@ -1,5 +1,3 @@
-
-
 var events;
 var nextEvents;
 
@@ -19,6 +17,8 @@ var report;
 
 var prevEvents;
 var nextEvent;
+
+CKEDITOR.disableAutoInline = true;
 
 $(document).ready(function() {
 
@@ -240,7 +240,6 @@ function updateNextEvent() {
 		$("#date-next-event").val("");
 		$("#time-next-event").val("");
 		$("#name-next-event").val("");
-		$("#date-next-event").prop("disabled", true);
 		$("#time-next-event").prop("disabled", true);
 		$("#name-next-event").prop("disabled", true);
 		applyDepartmentSelection([]);
@@ -508,7 +507,24 @@ function agendaForm(agenda) {
         removeAgenda(agenda._id, currentEvent._id);
     });
     $(".form-group", $agendaForm).append($deleteBtn);
-    var $description = $("<div class='form-group'><label>내용</label><textarea class='form-control' rows='5'></textarea></div>");
+    var editorID = "agenda-content-" + agenda._id;
+     var $description = $("<div class='form-group'><label>내용</label>" + 
+        "<div contenteditable='true' id='" +
+        editorID + "' class='editor'></div></div>");
+
+    $($description).find("div").ckeditor();
+    var editor = CKEDITOR.instances[editorID];
+    editor.setData(agenda.description);
+    editor.on( 'change', function( evt ) {
+        // getData() returns CKEditor's HTML content.
+        var agendaID = agenda._id;
+        $.each(report.agendas, function(i, agenda) {
+            if (agenda._id === agendaID) {
+                report.agendas[i].description = evt.editor.getData();
+            }
+        });
+    });
+    /*
     $($description).find("textarea").val(agenda.description);
     $($description).find("textarea").change( function() {
         var agendaID = agenda._id;
@@ -519,6 +535,7 @@ function agendaForm(agenda) {
             }
         });
     });
+    */
     $agendaForm.append($description);
     return $agendaForm;
 }
