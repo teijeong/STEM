@@ -235,6 +235,12 @@ class NextAgenda(Resource):
 
         return dbHelper.insertNextAgenda(args['name'], args['eventID'])
 
+    @marshal_with(agenda_fields)
+    def put(self, agendaID):
+        args = self.idParser.parse_args()
+
+        return dbHelper.insertExistingNextAgenda(agendaID, args['eventID'])
+
     def delete(self, agendaID):
         args = self.idParser.parse_args()
 

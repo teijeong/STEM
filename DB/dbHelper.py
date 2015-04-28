@@ -340,7 +340,10 @@ def generateReport(reportID):
                     prevEvents[-1]['agendas'][i]['description'] = ''
                     for oldAgenda in oldPrevEvent['agendas']:
                         if agendas[i]['_id'] == oldAgenda['_id']:
-                            prevEvents[-1]['agendas'][i]['description'] = oldAgenda['description']
+                            try:
+                                prevEvents[-1]['agendas'][i]['description'] = oldAgenda['description']
+                            except KeyError:
+                                prevEvents[-1]['agendas'][i]['description'] = ''
 
     report['prevEvents'] = prevEvents
 
@@ -360,7 +363,7 @@ def generateReport(reportID):
 	    agendas[i]['description'] = ''
 
     if event['nextEvent'] == '':
-        report['nextEvent'] = ''
+        report['nextEvent'] = {}
     elif not report['nextEvent']['_id'] == '':
         if report['nextEvent']['_id'] == event['nextEvent']:
             for i in range(len(agendas)):

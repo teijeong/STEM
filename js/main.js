@@ -4,7 +4,7 @@ var nextEvents;
 var currentEvent;
 
 /*/*/var server = "https://stem-flask.herokuapp.com/";
-//*/var server = "http://localhost:5000/";
+//**/var server = "http://localhost:5000/";
 
 var eventDates = [];
 var eventMonths = [];
@@ -225,7 +225,7 @@ function updatePrevAgendas() {
             "<h4>[" + prevEvent._id + "] " + prevEvent.name + "</h4>");
         $("#prev-agenda-list").append("<ul class='" + listID + "'></ul>");
         $.each(prevEvent.agendas, function(i, agenda) {
-            $("#prev-agendas #" + listID).append(prevAgendaForm(agenda));
+            $("#prev-agendas #" + listID).append(prevAgendaForm(agenda, prevEvent._id));
             $("#prev-agenda-list ." + listID).append("<li id=prev-agenda-list-item-" + agenda._id + ">" + agenda.name + "</li>");
         });
     });
@@ -508,7 +508,7 @@ function agendaForm(agenda) {
     });
     $(".form-group", $agendaForm).append($deleteBtn);
     var editorID = "agenda-content-" + agenda._id;
-     var $description = $("<div class='form-group'><label>내용</label>" + 
+    var $description = $("<div class='form-group'><label>내용</label>" + 
         "<div contenteditable='true' id='" +
         editorID + "' class='editor'></div></div>");
 
@@ -541,25 +541,33 @@ function agendaForm(agenda) {
 }
 
 //Create agenda form
-function prevAgendaForm(agenda) {
+function prevAgendaForm(agenda, eventID) {
     var $agendaForm = $("<form id='prev-agenda-" + agenda._id + "'></form>");
     $agendaForm.append("<div class='form-group'><label>&lt;안건 " + agenda._id + "&gt; " + agenda.name + "</label></div>");
-    var $description = $("<div class='form-group'><label>내용</label><textarea class='form-control' rows='5'></textarea></div>");
-    $($description).find("textarea").val(agenda.description);
-    $($description).find("textarea").change( function() {
-        var eventID = $(this).parent().parent().parent().attr('id').substring(12);
+    
+    var editorID = "prev-agenda-content-" + eventID + "-" + agenda._id;
+    var $description = $("<div class='form-group'><label>내용</label>" + 
+        "<div contenteditable='true' id='" +
+        editorID + "' class='editor'></div></div>");
+
+    $($description).find("div").ckeditor();
+    var editor = CKEDITOR.instances[editorID];
+    editor.setData(agenda.description);
+    editor.on( 'change', function( evt ) {
+        // getData() returns CKEditor's HTML content.
         var agendaID = agenda._id;
-        var text = $(this).val();
         $.each(report.prevEvents, function(i, prevEvent) {
             if (prevEvent._id === eventID) {
                 $.each(report.prevEvents[i].agendas, function(j, agenda) {
                     if (agenda._id === agendaID) {
-                        report.prevEvents[i].agendas[j].description = text;
+                        report.prevEvents[i].agendas[j].description = evt.editor.getData();
                     }
                 });
             }
         });
+
     });
+
     $agendaForm.append($description);
     return $agendaForm;
 }
