@@ -11,6 +11,9 @@
 .container-agendas {
     visibility: hidden;
 }
+.container-meeting-info {
+    padding-top: 50px;
+}
 
 .remove-agenda {
     float: right;

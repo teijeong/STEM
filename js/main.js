@@ -6,6 +6,8 @@ var currentEvent;
 /*/*/var server = "https://stem-flask.herokuapp.com/";
 //**/var server = "http://localhost:5000/";
 
+var app = "https://script.google.com/macros/s/AKfycbzsOY8Phdb5pzQ2FOtXjvsVmLn6pYE-2Q9s5p4m21eqNXTiD7w/exec"
+
 var eventDates = [];
 var eventMonths = [];
 
@@ -166,17 +168,22 @@ function updateEvent() {
     });
 
     $("#participants-header").css("visibility", "visible");
+    $(".container-meeting-info").css("visibility", "visible");
     $(".container-prev-agendas").css("visibility", "visible");
     $(".container-agendas").css("visibility", "visible");
     $(".container-next-meeting").css("visibility", "visible");
 }
 
 function updateReport() {
-
     updatePeople();
+    updateMeetingInfo();
     updatePrevAgendas();
     updateAgendas();
     updateNextEvent();
+}
+
+function updateMeetingInfo() {
+    $("#scribe").val(report.scribe || "");
 }
 
 function updatePeople() {
@@ -843,13 +850,37 @@ $("#remove-next-event").click(function() {
 });
 
 $("#save-report").click(function() {
+    report.scribe = $("#scribe").val();
+
     $.ajax({
-            url: server + "report/" + currentEvent._id,
-            type: "PUT",
-            crossDomain: true,
-            data: {"report": JSON.stringify(report)},
-            success: function(data) {
-                alert("저장되었습니다.");
-            }
-        });
+        url: server + "report/" + currentEvent._id,
+        type: "PUT",
+        crossDomain: true,
+        data: {"report": JSON.stringify(report)},
+        success: function(data) {
+            alert("저장되었습니다.");
+        }
+    });
+});
+
+$("#generate-document").click(function() {
+    report.scribe = $("#scribe").val();
+
+    $.ajax({
+        url: server + "report/" + currentEvent._id,
+        type: "PUT",
+        crossDomain: true,
+        data: {"report": JSON.stringify(report)},
+        success: function(data) {
+            $.ajax({
+                url: app,
+                type: "GET",
+                crossDomain: true,
+                data: {"id": currentEvent._id},
+                success: function(data) {
+                    window.open(data);
+                }
+            });
+        }
+    });
 });
