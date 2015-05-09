@@ -247,8 +247,6 @@ function updateNextEvent() {
 		$("#date-next-event").val("");
 		$("#time-next-event").val("");
 		$("#name-next-event").val("");
-		$("#time-next-event").prop("disabled", true);
-		$("#name-next-event").prop("disabled", true);
 		applyDepartmentSelection([]);
 		return;
 	}
@@ -507,7 +505,7 @@ function removeAgenda(agendaID, eventID) {
 //Create agenda form
 function agendaForm(agenda) {
     var $agendaForm = $("<form id='agenda-" + agenda._id + "'></form>");
-    $agendaForm.append("<div class='form-group'><label>&lt;안건 " + agenda._id + "&gt; " + agenda.name + "</label></div>");
+    $agendaForm.append("<div class='form-group'><label>" + agenda.name + "<span class='tag-id'>[#" + agenda._id + "]</span></label></div>");
     var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>");
     $deleteBtn.click( function(event) {
         event.preventDefault();
@@ -550,7 +548,7 @@ function agendaForm(agenda) {
 //Create agenda form
 function prevAgendaForm(agenda, eventID) {
     var $agendaForm = $("<form id='prev-agenda-" + agenda._id + "'></form>");
-    $agendaForm.append("<div class='form-group'><label>&lt;안건 " + agenda._id + "&gt; " + agenda.name + "</label></div>");
+    $agendaForm.append("<div class='form-group'><label>" + agenda.name + "<span class='tag-id'>[#" + agenda._id + "]</span></label></div>");
     
     var editorID = "prev-agenda-content-" + eventID + "-" + agenda._id;
     var $description = $("<div class='form-group'><label>내용</label>" + 
@@ -747,7 +745,7 @@ function removeNextAgenda(agendaID, eventID) {
 //Create agenda form
 function nextAgendaForm(agenda) {
     var $agendaForm = $("<form id='next-agenda-" + agenda._id + "'></form>");
-    $agendaForm.append("<div class='form-group'><label>&lt;안건 " + agenda._id + "&gt; " + agenda.name + "</label></div>");
+    $agendaForm.append("<div class='form-group'><label>" + agenda.name + "<span class='tag-id'>[#" + agenda._id + "]</span></label></div>");
     var $deleteBtn = $("<button class='btn btn-danger remove-agenda'>Delete</button>");
     $deleteBtn.click( function(event) {
         event.preventDefault();
@@ -872,15 +870,7 @@ $("#generate-document").click(function() {
         crossDomain: true,
         data: {"report": JSON.stringify(report)},
         success: function(data) {
-            $.ajax({
-                url: app,
-                type: "GET",
-                crossDomain: true,
-                data: {"id": currentEvent._id},
-                success: function(data) {
-                    window.open(data);
-                }
-            });
+            window.open(app + "?id=" + currentEvent._id);
         }
     });
 });

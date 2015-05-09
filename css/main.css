@@ -41,3 +41,8 @@ body {
     min-height: 100px;
     background-color: #F7F7F9;
 }
+
+.tag-id {
+    font-size: 60%;
+    color: #7E7E7E;
+}
