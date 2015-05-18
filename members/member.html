@@ -1,0 +1,45 @@
+<html ng-app="stemApp">
+	<head>
+		<meta charset="utf-8" />
+		<title>Members</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+		<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+		<script src="app.js"></script>
+		<link rel="stylesheet" href="member.css" />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+	</head>
+	<body ng-controller="memberList">
+		<div class="members">
+			<a ng-repeat="member in members" class="member-tag" ng-click="openCard(member.id)">
+				<div class="member-picture">
+					<div class="member-picture-container">
+						<img class="member-picture-thumb" src="{{member.picture}}">
+					</div>
+				</div>
+				<h5>{{member.name}}</h5>
+			</a>
+
+		</div>
+
+		<div class="member-card">
+			<a href="javascript:void(0)" onclick="closeModal()">
+				<i class="modal-close fa fa-remove" style="line-height:22px;"></i>
+			</a>
+			<div class="card-body">
+				<div class="card-photo">
+					<img class="card-cover" src="{{members[pIndex].cover}}">
+				</div>
+				<div class="card-desc">
+					<h4 class="card-member-name">{{members[pIndex].name}}</h4>
+					<h6 class="card-member-dept">{{members[pIndex].department}}</h6>
+					<p class="card-member-description">{{members[pIndex].description}}</p>
+					<a class="card-member-social-link" href="{{members[pIndex].social}}">{{members[pIndex].social.split('://')[1]}}</a>
+				</div>
+			</div>
+		</div>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+		<script src="jquery.easyModal.js"></script>
+		<script src="member.js"></script>
+	</body>
+</html>
