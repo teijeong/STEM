@@ -14,7 +14,7 @@
 			<a ng-repeat="member in members" class="member-tag" ng-click="openCard(member.id)">
 				<div class="member-picture">
 					<div class="member-picture-container">
-						<img class="member-picture-thumb" src="{{member.picture}}">
+						<img class="member-picture-thumb" src="{{member.picture || 'images/default.png'}}">
 					</div>
 				</div>
 				<h5>{{member.name}}</h5>
@@ -28,7 +28,7 @@
 			</a>
 			<div class="card-body">
 				<div class="card-photo">
-					<img class="card-cover" src="{{members[pIndex].cover}}">
+					<img class="card-cover" src="{{members[pIndex].cover || 'images/cover_default.gif'}}">
 				</div>
 				<div class="card-desc">
 					<h4 class="card-member-name">{{members[pIndex].name}}</h4>

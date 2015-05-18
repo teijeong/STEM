@@ -7,7 +7,7 @@ var person = function(id, name, img) {
 	this.department = 'Department';
 	this.description = 'Jon loves to longboard, ride fixie, and drive stick because, as he says, the journey is just as important as the destination.';
 	this.social = 'https://facebook.com/FredJeong';
-	this.cover = 'images/cover.jpg';
+	this.cover = '';
 }
 
 stemApp.controller('memberList', function($scope) {
