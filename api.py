@@ -264,6 +264,14 @@ class Report(Resource):
         return {'result': result['nModified'] == 1}
 
 
+class Iplookup(Resource):
+
+    def get(self):
+        ip = db.connectip.find().sort('time').limit(1)[0]
+        print ip
+        return {'ip':ip['ip']}
+
+
 @app.errorhandler(404)
 def not_found(error=None):
     message = {
@@ -293,6 +301,7 @@ api.add_resource(NextAgendas, '/next-agendas')
 api.add_resource(NextAgenda, '/next-agenda', '/next-agenda/<int:agendaID>')
 api.add_resource(Report, '/report/<string:reportID>')
 api.add_resource(AgendaList, '/agenda-list')
+api.add_resource(Iplookup, '/ip')
 
 if __name__ == '__main__':
     app.debug = True
